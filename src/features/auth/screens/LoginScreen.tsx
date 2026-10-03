@@ -12,38 +12,43 @@ import {
 import { Building2 } from 'lucide-react-native';
 
 import { InputField } from '../../../components/ui/InputField';
+import { useAppTheme } from '../../../theme/ThemeContext';
 import { useAuthStore } from '../hooks/useAuthStore';
 
-/** Faint blueprint-style grid overlay, built from plain Views (no SVG dependency). */
 const BlueprintGrid: React.FC = () => {
   const columns = Array.from({ length: 7 }, (_, i) => i);
   const rows = Array.from({ length: 12 }, (_, i) => i);
   return (
-    <View pointerEvents="none" className="absolute inset-0 overflow-hidden opacity-[0.06]">
-      <View className="absolute inset-0 flex-row justify-between">
+    <View pointerEvents="none" style={{ position: 'absolute', inset: 0, overflow: 'hidden', opacity: 0.06 }}>
+      <View style={{ position: 'absolute', inset: 0, flexDirection: 'row', justifyContent: 'space-between' }}>
         {columns.map((i) => (
-          <View key={`col-${i}`} className="h-full w-px bg-sky-300" />
+          <View key={`col-${i}`} style={{ width: 1, height: '100%', backgroundColor: '#A2A8B5' }} />
         ))}
       </View>
-      <View className="absolute inset-0 justify-between">
+      <View style={{ position: 'absolute', inset: 0, justifyContent: 'space-between' }}>
         {rows.map((i) => (
-          <View key={`row-${i}`} className="h-px w-full bg-sky-300" />
+          <View key={`row-${i}`} style={{ width: '100%', height: 1, backgroundColor: '#A2A8B5' }} />
         ))}
       </View>
     </View>
   );
 };
 
-/** Stylized architectural skyline motif built from layered Views (no SVG dependency). */
-const SkylineMotif: React.FC = () => {
+const SkylineMotif: React.FC<{ accent: string; accentSoft: string }> = ({ accent, accentSoft }) => {
   const bars = [38, 62, 46, 80, 54, 34, 70];
   return (
-    <View pointerEvents="none" className="mt-2 h-24 flex-row items-end justify-center opacity-80">
+    <View pointerEvents="none" style={{ marginTop: 8, height: 96, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', opacity: 0.8 }}>
       {bars.map((height, index) => (
         <View
           key={index}
-          style={{ height, width: 14, marginHorizontal: 3 }}
-          className={index === 3 ? 'rounded-t-sm bg-sky-500' : 'rounded-t-sm bg-sky-500/30'}
+          style={{
+            height,
+            width: 14,
+            marginHorizontal: 3,
+            borderTopLeftRadius: 4,
+            borderTopRightRadius: 4,
+            backgroundColor: index === 3 ? accent : accentSoft,
+          }}
         />
       ))}
     </View>
@@ -55,12 +60,8 @@ interface LoginScreenProps {
   onSignedIn: () => void;
 }
 
-/**
- * Module 2: luxury architectural login screen. Strict session routing lives
- * in `App.tsx` — this screen only calls `useAuthStore().login()`, which
- * flips `isAuthenticated` and lets the root router mount `AppShell`.
- */
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onRegister, onSignedIn }) => {
+  const { colors } = useAppTheme();
   const [identifier, setIdentifier] = useState('');
   const [pin, setPin] = useState('');
   const [loginError, setLoginError] = useState<string | false>(false);
@@ -83,33 +84,55 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onRegister, onSignedIn
       return;
     }
     setLoginError(false);
-    // Let the keyboard finish closing before the login screen unmounts.
     setTimeout(onSignedIn, 350);
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 bg-[#070b12]">
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1, backgroundColor: colors.canvas }}
+    >
       <ScrollView
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="none"
-        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
-        className="flex-1 px-6"
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24 }}
+        style={{ flex: 1 }}
       >
-        <View className="flex-1 justify-center">
+        <View style={{ flex: 1, justifyContent: 'center' }}>
           <BlueprintGrid />
 
-          <View className="items-center">
-            <View className="h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04]">
-              <Building2 size={28} color="#0ea5e9" />
+          <View style={{ alignItems: 'center' }}>
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 18,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.subpanel,
+              }}
+            >
+              <Building2 size={28} color={colors.brassAccent} />
             </View>
-            <Text className="mt-4 text-2xl font-bold tracking-tight text-white">SPACE MAKER</Text>
-            <Text className="text-xs tracking-[3px] text-slate-500">TELE-DESK ENTERPRISE SUITE</Text>
-            <SkylineMotif />
+            <Text style={{ marginTop: 16, fontSize: 28, fontWeight: '800', letterSpacing: 0.8, color: colors.textPrimary }}>SPACE MAKER</Text>
+            <Text style={{ marginTop: 4, fontSize: 11, letterSpacing: 3, color: colors.textSecondary }}>TELE-DESK ENTERPRISE SUITE</Text>
+            <SkylineMotif accent={colors.brassAccent} accentSoft={colors.subpanel} />
           </View>
 
-          <View className="mt-8 rounded-3xl border border-white/10 bg-white/[0.04] p-6">
-            <Text className="text-lg font-bold tracking-tight text-white">Agent Sign In</Text>
-            <Text className="mt-1 text-sm text-slate-400">
+          <View
+            style={{
+              marginTop: 28,
+              borderRadius: 26,
+              borderWidth: 1,
+              borderColor: colors.border,
+              backgroundColor: colors.card,
+              padding: 24,
+            }}
+          >
+            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>Agent Sign In</Text>
+            <Text style={{ marginTop: 4, fontSize: 14, color: colors.textSecondary }}>
               Clock in with your corporate credentials to start your shift.
             </Text>
 
@@ -139,9 +162,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onRegister, onSignedIn
 
             <Pressable
               onPress={handleSignIn}
-              className="mt-6 min-h-[52px] flex-row items-center justify-center rounded-xl bg-sky-600 active:scale-[0.98]"
+              style={{
+                marginTop: 24,
+                minHeight: 52,
+                borderRadius: 14,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.brassAccent,
+              }}
             >
-              <Text className="text-base font-bold tracking-tight text-white">Clock In / Sign In</Text>
+              <Text style={{ fontSize: 16, fontWeight: '800', color: '#0F172A' }}>Clock In / Sign In</Text>
             </Pressable>
 
             <Pressable
@@ -149,13 +179,25 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onRegister, onSignedIn
                 useAuthStore.getState().login('imrannahar', '123456');
                 onSignedIn();
               }}
-              className="mt-3 min-h-[52px] items-center justify-center rounded-xl border border-sky-500"
+              style={{
+                marginTop: 12,
+                minHeight: 52,
+                borderRadius: 14,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: colors.brassAccent,
+                backgroundColor: colors.subpanel,
+              }}
             >
-              <Text className="text-base font-bold text-sky-300">Enter demo desk</Text>
+              <Text style={{ fontSize: 16, fontWeight: '800', color: colors.brassAccent }}>Enter demo desk</Text>
             </Pressable>
 
-            <Pressable onPress={onRegister} className="mt-4 min-h-[48px] items-center justify-center">
-              <Text className="text-sm font-semibold text-sky-400">
+            <Pressable
+              onPress={onRegister}
+              style={{ marginTop: 16, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.brassAccent }}>
                 New Agent? Register for Onboarding
               </Text>
             </Pressable>

@@ -15,6 +15,7 @@ import { ChevronDown, ChevronLeft, ShieldCheck } from 'lucide-react-native';
 import { SelectModal } from '../../../components/SelectModal';
 import { InputField } from '../../../components/ui/InputField';
 import { DatePickerModal } from '../../../components/ui/DatePickerModal';
+import { useAppTheme } from '../../../theme/ThemeContext';
 import { useAuthStore } from '../hooks/useAuthStore';
 import {
   DIVISIONS,
@@ -43,23 +44,16 @@ type PickerTarget = 'permanent-division' | 'permanent-district' | 'permanent-tha
 
 interface AgentRegistrationScreenProps {
   onComplete: () => void;
-  /** Optional: lets the wizard be reached from `LoginScreen` and return there without completing. */
   onBack?: () => void;
 }
 
-/**
- * Module 7: 3-Step KYC Agent Registration Wizard.
- * Submission sets `kycStatus: 'PENDING_VERIFICATION'` in `useAuthStore` —
- * see that file's header comment for why dialer access is NOT hard-blocked
- * in this front-end-only build.
- */
 export const AgentRegistrationScreen: React.FC<AgentRegistrationScreenProps> = ({ onComplete, onBack }) => {
+  const { colors } = useAppTheme();
   const submitRegistration = useAuthStore((state) => state.submitRegistration);
   const [step, setStep] = useState(1);
   const [activePicker, setActivePicker] = useState<PickerTarget>(null);
   const [isDobPickerVisible, setIsDobPickerVisible] = useState(false);
 
-  // Step 1
   const [legalName, setLegalName] = useState('');
   const [nidNumber, setNidNumber] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
@@ -67,14 +61,12 @@ export const AgentRegistrationScreen: React.FC<AgentRegistrationScreenProps> = (
   const [occupation, setOccupation] = useState<Occupation>('Student');
   const [workPreference, setWorkPreference] = useState<WorkPreference>('PART_TIME');
 
-  // Step 2
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [permanentAddress, setPermanentAddress] = useState<AddressDetails>(EMPTY_ADDRESS);
   const [presentAddress, setPresentAddress] = useState<AddressDetails>(EMPTY_ADDRESS);
   const [sameAsPermanent, setSameAsPermanent] = useState(false);
 
-  // Step 3
   const [referenceName, setReferenceName] = useState('');
   const [referencePhone, setReferencePhone] = useState('');
   const [referenceAddress, setReferenceAddress] = useState('');
@@ -165,7 +157,6 @@ export const AgentRegistrationScreen: React.FC<AgentRegistrationScreenProps> = (
     };
 
     submitRegistration(profile);
-    // Let the keyboard finish closing before this screen unmounts.
     setTimeout(onComplete, 350);
   };
 
@@ -186,142 +177,134 @@ export const AgentRegistrationScreen: React.FC<AgentRegistrationScreenProps> = (
         : 'Select Thana / Upazila';
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      className="flex-1 bg-slate-950"
-    >
-      <View className="flex-1 px-5 pt-6">
-        <View className="flex-row items-center">
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.canvas }}>
+      <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 24 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           {onBack && (
-            <Pressable onPress={onBack} className="mr-2 h-10 w-10 items-center justify-center rounded-full">
-              <ChevronLeft size={20} color="#94a3b8" />
+            <Pressable onPress={onBack} style={{ marginRight: 8, width: 40, height: 40, borderRadius: 999, alignItems: 'center', justifyContent: 'center' }}>
+              <ChevronLeft size={20} color={colors.textSecondary} />
             </Pressable>
           )}
-          <ShieldCheck size={22} color="#38bdf8" />
-          <Text className="ml-2 text-xl font-bold tracking-tight text-white">Agent KYC Registration</Text>
+          <ShieldCheck size={22} color={colors.brassAccent} />
+          <Text style={{ marginLeft: 8, fontSize: 22, fontWeight: '800', letterSpacing: 0.4, color: colors.textPrimary }}>Agent KYC Registration</Text>
         </View>
 
-        <View className="mt-5 flex-row items-center">
+        <View style={{ marginTop: 20, flexDirection: 'row', alignItems: 'center' }}>
           {[1, 2, 3].map((s) => (
-            <View key={s} className="mr-2 flex-1 flex-row items-center">
+            <View key={s} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', marginRight: s < 3 ? 8 : 0 }}>
               <View
-                className={`h-8 w-8 items-center justify-center rounded-full ${
-                  s <= step ? 'bg-sky-600' : 'bg-slate-800'
-                }`}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 999,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: s <= step ? colors.brassAccent : colors.subpanel,
+                }}
               >
-                <Text className="text-xs font-bold text-white">{s}</Text>
+                <Text style={{ fontSize: 12, fontWeight: '800', color: s <= step ? '#0F172A' : colors.textSecondary }}>{s}</Text>
               </View>
               {s < 3 && (
-                <View className={`ml-2 h-1 flex-1 rounded-full ${s < step ? 'bg-sky-600' : 'bg-slate-800'}`} />
+                <View style={{ flex: 1, height: 2, borderRadius: 999, marginLeft: 8, backgroundColor: s < step ? colors.brassAccent : colors.subpanel }} />
               )}
             </View>
           ))}
         </View>
 
-        <ScrollView
-          className="mt-5"
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: 24 }}
-        >
+        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }} style={{ marginTop: 20 }}>
           {step === 1 && (
             <View>
-              <InputField
-                label="Legal Name (as per NID)"
-                required
-                value={legalName}
-                onChangeText={setLegalName}
-                returnKeyType="done"
-                onSubmitEditing={() => Keyboard.dismiss()}
-              />
+              <InputField label="Legal Name (as per NID)" required value={legalName} onChangeText={setLegalName} returnKeyType="done" onSubmitEditing={() => Keyboard.dismiss()} />
+              <InputField label="NID Number" required value={nidNumber} onChangeText={setNidNumber} keyboardType="number-pad" returnKeyType="done" onSubmitEditing={() => Keyboard.dismiss()} error={nidError && 'NID must be exactly 10, 13, or 17 digits.'} />
 
-              <InputField
-                label="NID Number"
-                required
-                value={nidNumber}
-                onChangeText={setNidNumber}
-                keyboardType="number-pad"
-                returnKeyType="done"
-                onSubmitEditing={() => Keyboard.dismiss()}
-                error={nidError && 'NID must be exactly 10, 13, or 17 digits.'}
-              />
-
-              <Text className="mt-5 text-xs font-medium text-slate-400">
-                DATE OF BIRTH<Text className="font-bold text-rose-500"> *</Text>
-              </Text>
+              <Text style={{ marginTop: 20, fontSize: 11, fontWeight: '700', color: colors.textSecondary }}>DATE OF BIRTH</Text>
               <Pressable
                 onPress={() => {
                   Keyboard.dismiss();
                   setTimeout(() => setIsDobPickerVisible(true), 250);
                 }}
-                className={`mt-2 min-h-[52px] flex-row items-center justify-between rounded-xl border bg-slate-900 px-4 ${
-                  dobError ? 'border-rose-700' : 'border-white/10'
-                }`}
+                style={{
+                  marginTop: 10,
+                  minHeight: 52,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: dobError ? '#F87171' : colors.border,
+                  backgroundColor: colors.subpanel,
+                  paddingHorizontal: 16,
+                }}
               >
-                <Text className={dateOfBirth ? 'font-mono text-base tracking-wide text-white' : 'text-slate-500'}>
+                <Text style={{ fontFamily: 'monospace', fontSize: 15, letterSpacing: 0.8, color: dateOfBirth ? colors.textPrimary : colors.textSecondary }}>
                   {dateOfBirth || 'Tap to select date of birth'}
                 </Text>
-                <ChevronDown size={18} color="#94a3b8" />
+                <ChevronDown size={18} color={colors.textSecondary} />
               </Pressable>
-              {dobError && (
-                <Text className="mt-1 text-xs text-rose-400">
-                  Must be a valid date and agent must be 18 years or older.
-                </Text>
-              )}
+              {dobError && <Text style={{ marginTop: 6, color: '#F87171', fontSize: 12 }}>Must be a valid date and agent must be 18 years or older.</Text>}
 
-              <Text className="mt-4 text-xs font-medium text-slate-400">GENDER</Text>
-              <View className="mt-2 flex-row flex-wrap gap-2">
+              <Text style={{ marginTop: 20, fontSize: 11, fontWeight: '700', color: colors.textSecondary }}>GENDER</Text>
+              <View style={{ marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {GENDERS.map((option) => (
                   <Pressable
                     key={option}
                     onPress={() => setGender(option)}
-                    className={`min-h-[40px] items-center justify-center rounded-full border px-4 ${
-                      gender === option ? 'border-sky-600 bg-sky-950' : 'border-slate-800 bg-slate-900'
-                    }`}
+                    style={{
+                      minHeight: 40,
+                      paddingHorizontal: 16,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: 999,
+                      borderWidth: 1,
+                      borderColor: gender === option ? colors.brassAccent : colors.border,
+                      backgroundColor: gender === option ? 'rgba(216,162,67,0.12)' : colors.subpanel,
+                    }}
                   >
-                    <Text className={`text-sm ${gender === option ? 'text-sky-400' : 'text-slate-400'}`}>
-                      {option}
-                    </Text>
+                    <Text style={{ fontSize: 14, color: gender === option ? colors.brassAccent : colors.textSecondary }}>{option}</Text>
                   </Pressable>
                 ))}
               </View>
 
-              <Text className="mt-4 text-xs font-medium text-slate-400">OCCUPATION</Text>
-              <View className="mt-2 flex-row flex-wrap gap-2">
+              <Text style={{ marginTop: 20, fontSize: 11, fontWeight: '700', color: colors.textSecondary }}>OCCUPATION</Text>
+              <View style={{ marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {OCCUPATIONS.map((option) => (
                   <Pressable
                     key={option}
                     onPress={() => setOccupation(option)}
-                    className={`min-h-[40px] items-center justify-center rounded-full border px-4 ${
-                      occupation === option ? 'border-sky-600 bg-sky-950' : 'border-slate-800 bg-slate-900'
-                    }`}
+                    style={{
+                      minHeight: 40,
+                      paddingHorizontal: 16,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: 999,
+                      borderWidth: 1,
+                      borderColor: occupation === option ? colors.brassAccent : colors.border,
+                      backgroundColor: occupation === option ? 'rgba(216,162,67,0.12)' : colors.subpanel,
+                    }}
                   >
-                    <Text className={`text-sm ${occupation === option ? 'text-sky-400' : 'text-slate-400'}`}>
-                      {option}
-                    </Text>
+                    <Text style={{ fontSize: 14, color: occupation === option ? colors.brassAccent : colors.textSecondary }}>{option}</Text>
                   </Pressable>
                 ))}
               </View>
 
-              <Text className="mt-4 text-xs font-medium text-slate-400">WORK PREFERENCE</Text>
-              <View className="mt-2 flex-row gap-2">
+              <Text style={{ marginTop: 20, fontSize: 11, fontWeight: '700', color: colors.textSecondary }}>WORK PREFERENCE</Text>
+              <View style={{ marginTop: 10, flexDirection: 'row', gap: 8 }}>
                 {WORK_PREFERENCES.map((option) => (
                   <Pressable
                     key={option.value}
                     onPress={() => setWorkPreference(option.value)}
-                    className={`min-h-[40px] flex-1 items-center justify-center rounded-full border ${
-                      workPreference === option.value
-                        ? 'border-sky-600 bg-sky-950'
-                        : 'border-slate-800 bg-slate-900'
-                    }`}
+                    style={{
+                      flex: 1,
+                      minHeight: 40,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: 999,
+                      borderWidth: 1,
+                      borderColor: workPreference === option.value ? colors.brassAccent : colors.border,
+                      backgroundColor: workPreference === option.value ? 'rgba(216,162,67,0.12)' : colors.subpanel,
+                    }}
                   >
-                    <Text
-                      className={`text-sm ${
-                        workPreference === option.value ? 'text-sky-400' : 'text-slate-400'
-                      }`}
-                    >
-                      {option.label}
-                    </Text>
+                    <Text style={{ fontSize: 14, color: workPreference === option.value ? colors.brassAccent : colors.textSecondary }}>{option.label}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -330,126 +313,53 @@ export const AgentRegistrationScreen: React.FC<AgentRegistrationScreenProps> = (
 
           {step === 2 && (
             <View>
-              <InputField
-                label="Phone Number"
-                required
-                value={phone}
-                onChangeText={setPhone}
-                keyboardType="phone-pad"
-                returnKeyType="done"
-                onSubmitEditing={() => Keyboard.dismiss()}
-              />
+              <InputField label="Phone Number" required value={phone} onChangeText={setPhone} keyboardType="phone-pad" returnKeyType="done" onSubmitEditing={() => Keyboard.dismiss()} />
+              <InputField label="Email" required value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" returnKeyType="done" onSubmitEditing={() => Keyboard.dismiss()} />
 
-              <InputField
-                label="Email"
-                required
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                returnKeyType="done"
-                onSubmitEditing={() => Keyboard.dismiss()}
-              />
-
-              <Text className="mt-5 text-sm font-semibold text-white">Permanent Address</Text>
-
-              <Text className="mt-3 text-xs font-medium text-slate-400">DIVISION</Text>
-              <Pressable
-                onPress={() => setActivePicker('permanent-division')}
-                className="mt-2 min-h-[48px] flex-row items-center justify-between rounded-xl border border-slate-800 bg-slate-900 px-4"
-              >
-                <Text className={permanentAddress.division ? 'text-white' : 'text-slate-500'}>
-                  {permanentAddress.division || 'Select division'}
-                </Text>
-                <ChevronDown size={18} color="#94a3b8" />
+              <Text style={{ marginTop: 20, fontSize: 15, fontWeight: '800', color: colors.textPrimary }}>Permanent Address</Text>
+              <Text style={{ marginTop: 14, fontSize: 11, fontWeight: '700', color: colors.textSecondary }}>DIVISION</Text>
+              <Pressable onPress={() => setActivePicker('permanent-division')} style={{ marginTop: 10, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, paddingHorizontal: 16 }}>
+                <Text style={{ fontSize: 14, color: permanentAddress.division ? colors.textPrimary : colors.textSecondary }}>{permanentAddress.division || 'Select division'}</Text>
+                <ChevronDown size={18} color={colors.textSecondary} />
               </Pressable>
 
-              <Text className="mt-4 text-xs font-medium text-slate-400">DISTRICT</Text>
-              <Pressable
-                onPress={() => permanentAddress.division && setActivePicker('permanent-district')}
-                className="mt-2 min-h-[48px] flex-row items-center justify-between rounded-xl border border-slate-800 bg-slate-900 px-4"
-              >
-                <Text className={permanentAddress.district ? 'text-white' : 'text-slate-500'}>
-                  {permanentAddress.district || 'Select district'}
-                </Text>
-                <ChevronDown size={18} color="#94a3b8" />
+              <Text style={{ marginTop: 16, fontSize: 11, fontWeight: '700', color: colors.textSecondary }}>DISTRICT</Text>
+              <Pressable onPress={() => permanentAddress.division && setActivePicker('permanent-district')} style={{ marginTop: 10, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, paddingHorizontal: 16 }}>
+                <Text style={{ fontSize: 14, color: permanentAddress.district ? colors.textPrimary : colors.textSecondary }}>{permanentAddress.district || 'Select district'}</Text>
+                <ChevronDown size={18} color={colors.textSecondary} />
               </Pressable>
 
-              <Text className="mt-4 text-xs font-medium text-slate-400">THANA / UPAZILA</Text>
-              <Pressable
-                onPress={() => permanentAddress.district && setActivePicker('permanent-thana')}
-                className="mt-2 min-h-[48px] flex-row items-center justify-between rounded-xl border border-slate-800 bg-slate-900 px-4"
-              >
-                <Text className={permanentAddress.thana ? 'text-white' : 'text-slate-500'}>
-                  {permanentAddress.thana || 'Select thana / upazila'}
-                </Text>
-                <ChevronDown size={18} color="#94a3b8" />
+              <Text style={{ marginTop: 16, fontSize: 11, fontWeight: '700', color: colors.textSecondary }}>THANA / UPAZILA</Text>
+              <Pressable onPress={() => permanentAddress.district && setActivePicker('permanent-thana')} style={{ marginTop: 10, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, paddingHorizontal: 16 }}>
+                <Text style={{ fontSize: 14, color: permanentAddress.thana ? colors.textPrimary : colors.textSecondary }}>{permanentAddress.thana || 'Select thana / upazila'}</Text>
+                <ChevronDown size={18} color={colors.textSecondary} />
               </Pressable>
 
-              <Text className="mt-4 text-xs font-medium text-slate-400">ROAD / VILLAGE</Text>
+              <Text style={{ marginTop: 16, fontSize: 11, fontWeight: '700', color: colors.textSecondary }}>ROAD / VILLAGE</Text>
               <TextInput
                 value={permanentAddress.roadOrVillage}
                 onChangeText={(value) => updatePermanentField('roadOrVillage', value)}
                 placeholder="House/Road no. or village name"
-                placeholderTextColor="#475569"
+                placeholderTextColor={colors.textSecondary}
                 returnKeyType="done"
                 onSubmitEditing={() => Keyboard.dismiss()}
-                className="mt-2 min-h-[48px] rounded-xl border border-white/10 bg-slate-900 px-4 text-base text-white"
+                style={{ marginTop: 10, minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, paddingHorizontal: 16, color: colors.textPrimary, fontSize: 16 }}
               />
 
-              <Pressable
-                onPress={handleToggleSameAsPermanent}
-                className="mt-5 flex-row items-center"
-              >
-                <View
-                  className={`h-6 w-6 items-center justify-center rounded border ${
-                    sameAsPermanent ? 'border-sky-600 bg-sky-600' : 'border-slate-700 bg-slate-900'
-                  }`}
-                >
-                  {sameAsPermanent && <Text className="text-xs font-bold text-white">✓</Text>}
+              <Pressable onPress={handleToggleSameAsPermanent} style={{ marginTop: 20, flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 1, borderColor: sameAsPermanent ? colors.brassAccent : colors.border, backgroundColor: sameAsPermanent ? colors.brassAccent : colors.subpanel, alignItems: 'center', justifyContent: 'center' }}>
+                  {sameAsPermanent && <Text style={{ color: '#0F172A', fontWeight: '800', fontSize: 12 }}>✓</Text>}
                 </View>
-                <Text className="ml-2 text-sm text-slate-300">Present address same as permanent</Text>
+                <Text style={{ marginLeft: 10, fontSize: 14, color: colors.textPrimary }}>Present address same as permanent</Text>
               </Pressable>
 
               {!sameAsPermanent && (
-                <View className="mt-4">
-                  <Text className="text-sm font-semibold text-white">Present Address</Text>
-                  <InputField
-                    label="Division"
-                    value={presentAddress.division}
-                    onChangeText={(value) =>
-                      setPresentAddress((previous) => ({ ...previous, division: value }))
-                    }
-                    returnKeyType="done"
-                    onSubmitEditing={() => Keyboard.dismiss()}
-                  />
-                  <InputField
-                    label="District"
-                    value={presentAddress.district}
-                    onChangeText={(value) =>
-                      setPresentAddress((previous) => ({ ...previous, district: value }))
-                    }
-                    returnKeyType="done"
-                    onSubmitEditing={() => Keyboard.dismiss()}
-                  />
-                  <InputField
-                    label="Thana / Upazila"
-                    value={presentAddress.thana}
-                    onChangeText={(value) =>
-                      setPresentAddress((previous) => ({ ...previous, thana: value }))
-                    }
-                    returnKeyType="done"
-                    onSubmitEditing={() => Keyboard.dismiss()}
-                  />
-                  <InputField
-                    label="Road / Village"
-                    value={presentAddress.roadOrVillage}
-                    onChangeText={(value) =>
-                      setPresentAddress((previous) => ({ ...previous, roadOrVillage: value }))
-                    }
-                    returnKeyType="done"
-                    onSubmitEditing={() => Keyboard.dismiss()}
-                  />
+                <View style={{ marginTop: 20 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '800', color: colors.textPrimary }}>Present Address</Text>
+                  <InputField label="Division" value={presentAddress.division} onChangeText={(value) => setPresentAddress((previous) => ({ ...previous, division: value }))} returnKeyType="done" onSubmitEditing={() => Keyboard.dismiss()} />
+                  <InputField label="District" value={presentAddress.district} onChangeText={(value) => setPresentAddress((previous) => ({ ...previous, district: value }))} returnKeyType="done" onSubmitEditing={() => Keyboard.dismiss()} />
+                  <InputField label="Thana / Upazila" value={presentAddress.thana} onChangeText={(value) => setPresentAddress((previous) => ({ ...previous, thana: value }))} returnKeyType="done" onSubmitEditing={() => Keyboard.dismiss()} />
+                  <InputField label="Road / Village" value={presentAddress.roadOrVillage} onChangeText={(value) => setPresentAddress((previous) => ({ ...previous, roadOrVillage: value }))} returnKeyType="done" onSubmitEditing={() => Keyboard.dismiss()} />
                 </View>
               )}
             </View>
@@ -457,70 +367,34 @@ export const AgentRegistrationScreen: React.FC<AgentRegistrationScreenProps> = (
 
           {step === 3 && (
             <View>
-              <Text className="text-sm font-semibold text-white">Reference Person</Text>
+              <Text style={{ fontSize: 15, fontWeight: '800', color: colors.textPrimary }}>Reference Person</Text>
+              <InputField label="Full Name" required value={referenceName} onChangeText={setReferenceName} returnKeyType="done" onSubmitEditing={() => Keyboard.dismiss()} />
+              <InputField label="Contact Phone" required value={referencePhone} onChangeText={setReferencePhone} keyboardType="phone-pad" returnKeyType="done" onSubmitEditing={() => Keyboard.dismiss()} />
+              <InputField label="Full Address" required value={referenceAddress} onChangeText={setReferenceAddress} multiline numberOfLines={3} textAlignVertical="top" />
 
-              <InputField
-                label="Full Name"
-                required
-                value={referenceName}
-                onChangeText={setReferenceName}
-                returnKeyType="done"
-                onSubmitEditing={() => Keyboard.dismiss()}
-              />
-
-              <InputField
-                label="Contact Phone"
-                required
-                value={referencePhone}
-                onChangeText={setReferencePhone}
-                keyboardType="phone-pad"
-                returnKeyType="done"
-                onSubmitEditing={() => Keyboard.dismiss()}
-              />
-
-              <InputField
-                label="Full Address"
-                required
-                value={referenceAddress}
-                onChangeText={setReferenceAddress}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-
-              <View className="mt-5 rounded-xl border border-amber-800 bg-amber-950/40 p-4">
-                <Text className="text-xs text-amber-200">
-                  Submitting sets your status to Pending Verification. Head Office will review
-                  your NID and reference details before assigning a corporate SIM line.
+              <View style={{ marginTop: 20, borderRadius: 14, borderWidth: 1, borderColor: '#D8A243', backgroundColor: 'rgba(216,162,67,0.12)', padding: 14 }}>
+                <Text style={{ fontSize: 12, lineHeight: 18, color: '#F4D39A' }}>
+                  Submitting sets your status to Pending Verification. Head Office will review your NID and reference details before assigning a corporate SIM line.
                 </Text>
               </View>
             </View>
           )}
         </ScrollView>
 
-        <View className="flex-row gap-3 pb-4 pt-2">
+        <View style={{ flexDirection: 'row', gap: 12, paddingBottom: 18, paddingTop: 8 }}>
           {step > 1 && (
-            <Pressable
-              onPress={() => setStep((previous) => previous - 1)}
-              className="min-h-[48px] flex-1 items-center justify-center rounded-xl border border-slate-800 bg-slate-900"
-            >
-              <Text className="text-base font-semibold text-slate-300">Back</Text>
+            <Pressable onPress={() => setStep((previous) => previous - 1)} style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel }}>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary }}>Back</Text>
             </Pressable>
           )}
 
           {step < 3 ? (
-            <Pressable
-              onPress={handleNext}
-              className="min-h-[48px] flex-1 items-center justify-center rounded-xl bg-sky-600"
-            >
-              <Text className="text-base font-semibold text-white">Next</Text>
+            <Pressable onPress={handleNext} style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: colors.brassAccent }}>
+              <Text style={{ fontSize: 16, fontWeight: '800', color: '#0F172A' }}>Next</Text>
             </Pressable>
           ) : (
-            <Pressable
-              onPress={handleSubmit}
-              className="min-h-[48px] flex-1 items-center justify-center rounded-xl bg-emerald-600"
-            >
-              <Text className="text-base font-semibold text-white">Submit Registration</Text>
+            <Pressable onPress={handleSubmit} style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#34D399' }}>
+              <Text style={{ fontSize: 16, fontWeight: '800', color: '#0F172A' }}>Submit Registration</Text>
             </Pressable>
           )}
         </View>
@@ -550,9 +424,7 @@ export const AgentRegistrationScreen: React.FC<AgentRegistrationScreenProps> = (
           title="Date of Birth"
           minAgeYears={18}
           onConfirm={(date) => {
-            const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
-              date.getDate(),
-            ).padStart(2, '0')}`;
+            const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
             setDateOfBirth(iso);
             setIsDobPickerVisible(false);
           }}
