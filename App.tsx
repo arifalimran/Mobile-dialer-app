@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -38,6 +38,11 @@ import { BulletinsScreen } from './src/features/notices/screens/BulletinsScreen'
 import { useUnreadBulletinCount } from './src/features/notices/hooks/useNoticeStore';
 
 import { useThemePalette } from './src/theme/useThemeStore';
+import { ThemeProvider } from './src/theme/ThemeContext';
+import { DynamicWatermark } from './src/components/security/DynamicWatermark';
+import { ScheduledCallbacksScreen } from './src/features/callbacks/screens/ScheduledCallbacksScreen';
+import { StackingMatrixScreen } from './src/features/inventory/screens/StackingMatrixScreen';
+import { WalletScreen } from './src/features/wallet/screens/WalletScreen';
 import type { AppScreen } from './src/types/navigation';
 
 const queryClient = new QueryClient();
@@ -183,12 +188,14 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
   const [isAddLeadVisible, setIsAddLeadVisible] = useState(false);
   const [isOnShift, setIsOnShift] = useState(true);
+  const [bridgeLead, setBridgeLead] = useState<{ id: string; leadName: string; phone: string } | null>(null);
 
   const isShiftLocked = lockStatus === 'PENALIZED' && !!lockedUntil && Date.now() < lockedUntil;
   const shiftStatus: ShiftStatus = isShiftLocked ? 'LOCKED' : isOnShift ? 'ON_DUTY' : 'BREAK';
 
   return (
     <SafeAreaView className={`flex-1 ${palette.rootClassName}`} edges={['top', 'left', 'right']}>
+      <DynamicWatermark agentId={agentProfile?.corporateSim ?? 'AGT-01'} />
       <GlobalAppHeader
         agentName={agentProfile?.legalName ?? 'Agent'}
         unreadBulletinCount={unreadBulletinCount}
@@ -209,14 +216,20 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
         {currentScreen === 'BULLETINS' && <BulletinsScreen />}
         {currentScreen === 'KPI' && <KpiEvaluationScreen />}
         {currentScreen === 'SHIFTS' && <ShiftBookingScreen />}
-        {currentScreen === 'SCHEDULED_CALLBACKS' && (
-          <ComingSoonScreen
-            title="Scheduled Callbacks"
-            description="Will resurface leads with a lastCallbackNote once queue state is shared globally instead of living inside DialerScreen."
+        {currentScreen === 'CALLBACKS' && (
+          <ScheduledCallbacksScreen
+            onBridgeCall={(lead) => {
+              setBridgeLead({
+                id: lead.id,
+                leadName: lead.leadName,
+                phone: lead.phone,
+              });
+            }}
           />
         )}
+        {currentScreen === 'INVENTORY' && <StackingMatrixScreen />}
         {currentScreen === 'SITE_VISITS' && <ComingSoonScreen title="Site Visits & GPS Check-In" />}
-        {currentScreen === 'WALLET' && <ComingSoonScreen title="Earnings & Wallet" />}
+        {currentScreen === 'WALLET' && <WalletScreen />}
       </View>
 
       <BottomTabBar activeScreen={currentScreen} onNavigate={setCurrentScreen} />
@@ -251,6 +264,23 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
       />
 
       <MandatoryNoticeModal />
+
+      <Modal visible={Boolean(bridgeLead)} transparent animationType="slide" onRequestClose={() => setBridgeLead(null)}>
+        <View className="flex-1 items-center justify-end bg-black/50">
+          <View className="w-full rounded-t-3xl border-t border-white/10 bg-slate-950 p-5">
+            <Text className="text-lg font-bold text-white">Bridge Call</Text>
+            <Text className="mt-1 text-sm text-slate-400">
+              {bridgeLead?.leadName ?? 'Lead'} is ready to connect through the licensed PBX bridge.
+            </Text>
+            <Pressable
+              onPress={() => setBridgeLead(null)}
+              className="mt-5 min-h-[48px] items-center justify-center rounded-xl bg-sky-600"
+            >
+              <Text className="text-sm font-bold text-white">Proceed to Bridge</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
 
       <StatusBar style="light" />
     </SafeAreaView>
@@ -296,7 +326,9 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
-        <RootRouter />
+        <ThemeProvider>
+          <RootRouter />
+        </ThemeProvider>
       </SafeAreaProvider>
     </QueryClientProvider>
   );

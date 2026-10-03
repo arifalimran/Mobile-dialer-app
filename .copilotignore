@@ -1,0 +1,23 @@
+# Dependencies & Package Managers
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build & Expo Artifacts
+.expo/
+dist/
+build/
+web-build/
+*.tsbuildinfo
+
+# Documentation, Blueprints & Large Logs
+*.md
+*.pdf
+*.csv
+*.xlsx
+*.log
+
+# Git & Local Environments
+.git/
+.env*

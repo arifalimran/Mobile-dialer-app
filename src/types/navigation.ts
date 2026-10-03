@@ -4,6 +4,8 @@
  */
 export type AppScreen =
   | 'DIALER'
+  | 'CALLBACKS'
+  | 'INVENTORY'
   | 'BULLETINS'
   | 'KPI'
   | 'SHIFTS'

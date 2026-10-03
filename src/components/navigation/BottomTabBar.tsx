@@ -1,11 +1,11 @@
 import React from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CalendarClock, Clock, Phone, Wallet } from 'lucide-react-native';
+import { Bell, CalendarClock, ClipboardList, Clock, Phone, Warehouse, Wallet } from 'lucide-react-native';
 
 import type { AppScreen } from '../../types/navigation';
 
-type BottomTabScreen = 'DIALER' | 'SCHEDULED_CALLBACKS' | 'SHIFTS' | 'WALLET';
+type BottomTabScreen = 'DIALER' | 'CALLBACKS' | 'INVENTORY' | 'WALLET' | 'BULLETINS' | 'SHIFTS';
 
 interface TabDefinition {
   screen: BottomTabScreen;
@@ -14,10 +14,12 @@ interface TabDefinition {
 }
 
 const TABS: TabDefinition[] = [
-  { screen: 'DIALER', label: 'Dialer Desk', Icon: Phone },
-  { screen: 'SCHEDULED_CALLBACKS', label: 'Callbacks', Icon: Clock },
-  { screen: 'SHIFTS', label: 'Shifts', Icon: CalendarClock },
+  { screen: 'DIALER', label: 'Dialer', Icon: Phone },
+  { screen: 'CALLBACKS', label: 'Callbacks', Icon: Clock },
+  { screen: 'INVENTORY', label: 'Inventory', Icon: Warehouse },
   { screen: 'WALLET', label: 'Wallet', Icon: Wallet },
+  { screen: 'BULLETINS', label: 'Bulletins', Icon: Bell },
+  { screen: 'SHIFTS', label: 'Shifts', Icon: CalendarClock },
 ];
 
 interface BottomTabBarProps {
