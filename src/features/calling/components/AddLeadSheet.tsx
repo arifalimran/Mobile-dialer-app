@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { X } from 'lucide-react-native';
 
+import { useAppTheme } from '../../../theme/ThemeContext';
 import type { BusinessVertical, LeadContact } from '../callingTypes';
 import { BUSINESS_VERTICALS, VERTICAL_BADGE_STYLES } from '../constants/verticalOptions';
 import { maskPhoneNumber } from '../utils/maskPhoneNumber';
@@ -24,6 +25,7 @@ interface AddLeadSheetProps {
 }
 
 export const AddLeadSheet: React.FC<AddLeadSheetProps> = ({ visible, onClose, onAddLead }) => {
+  const { colors } = useAppTheme();
   const [name, setName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [vertical, setVertical] = useState<BusinessVertical>('Land Sharing');
@@ -70,99 +72,95 @@ export const AddLeadSheet: React.FC<AddLeadSheetProps> = ({ visible, onClose, on
     <Modal visible={visible} transparent animationType="slide">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        className="flex-1 justify-end"
+        style={{ flex: 1, justifyContent: 'flex-end' }}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View className="max-h-[90%] rounded-t-3xl border-t border-slate-800 bg-slate-950 p-5">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-lg font-semibold text-white">Add Custom Lead</Text>
+          <View style={{ maxHeight: '90%', borderTopWidth: 1, borderTopColor: colors.border, borderRadius: 24, backgroundColor: colors.card, padding: 20 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textPrimary }}>Add Custom Lead</Text>
               <Pressable
                 onPress={handleClose}
-                className="h-10 w-10 items-center justify-center rounded-full bg-slate-900"
+                style={{ height: 40, width: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: colors.subpanel }}
               >
-                <X size={18} color="#e2e8f0" />
+                <X size={18} color={colors.textPrimary} />
               </Pressable>
             </View>
 
             <ScrollView
-              className="mt-4"
+              style={{ marginTop: 16 }}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
             >
-              <Text className="text-xs font-medium text-slate-400">CLIENT NAME</Text>
+              <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 0.8, color: colors.textSecondary }}>CLIENT NAME</Text>
               <TextInput
                 value={name}
                 onChangeText={setName}
                 placeholder="Full name"
-                placeholderTextColor="#475569"
+                placeholderTextColor={colors.textSecondary}
                 returnKeyType="done"
                 onSubmitEditing={() => Keyboard.dismiss()}
-                className="mt-2 min-h-[48px] rounded-xl border border-slate-800 bg-slate-900 px-4 text-base text-white"
+                style={{ marginTop: 8, minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, paddingHorizontal: 16, fontSize: 16, color: colors.textPrimary }}
               />
 
-              <Text className="mt-4 text-xs font-medium text-slate-400">PHONE NUMBER</Text>
+              <Text style={{ marginTop: 16, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, color: colors.textSecondary }}>PHONE NUMBER</Text>
               <TextInput
                 value={phoneNumber}
                 onChangeText={setPhoneNumber}
                 placeholder="+8801XXXXXXXXX"
-                placeholderTextColor="#475569"
+                placeholderTextColor={colors.textSecondary}
                 keyboardType="phone-pad"
                 returnKeyType="done"
                 onSubmitEditing={() => Keyboard.dismiss()}
-                className="mt-2 min-h-[48px] rounded-xl border border-slate-800 bg-slate-900 px-4 text-base text-white"
+                style={{ marginTop: 8, minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, paddingHorizontal: 16, fontSize: 16, color: colors.textPrimary }}
               />
 
-          <Text className="mt-4 text-xs font-medium text-slate-400">VERTICAL</Text>
-          <View className="mt-2 flex-row flex-wrap gap-2">
-            {BUSINESS_VERTICALS.map((option) => {
-              const isSelected = option === vertical;
-              const style = VERTICAL_BADGE_STYLES[option];
-              return (
-                <Pressable
-                  key={option}
-                  onPress={() => setVertical(option)}
-                  className={`min-h-[40px] items-center justify-center rounded-full border px-4 ${
-                    isSelected ? style.container : 'border-slate-800 bg-slate-900'
-                  }`}
-                >
-                  <Text className={`text-xs font-medium ${isSelected ? style.text : 'text-slate-400'}`}>
-                    {option}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+              <Text style={{ marginTop: 16, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, color: colors.textSecondary }}>VERTICAL</Text>
+              <View style={{ marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {BUSINESS_VERTICALS.map((option) => {
+                  const isSelected = option === vertical;
+                  const style = VERTICAL_BADGE_STYLES[option];
+                  return (
+                    <Pressable
+                      key={option}
+                      onPress={() => setVertical(option)}
+                      style={{ minHeight: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 999, borderWidth: 1, borderColor: isSelected ? colors.border : colors.border, backgroundColor: isSelected ? colors.subpanel : colors.card, paddingHorizontal: 14 }}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: isSelected ? style.text : colors.textSecondary }}>
+                        {option}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
 
-              <Text className="mt-4 text-xs font-medium text-slate-400">BUDGET</Text>
+              <Text style={{ marginTop: 16, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, color: colors.textSecondary }}>BUDGET</Text>
               <TextInput
                 value={budget}
                 onChangeText={setBudget}
                 placeholder="৳"
-                placeholderTextColor="#475569"
+                placeholderTextColor={colors.textSecondary}
                 returnKeyType="done"
                 onSubmitEditing={() => Keyboard.dismiss()}
-                className="mt-2 min-h-[48px] rounded-xl border border-slate-800 bg-slate-900 px-4 text-base text-white"
+                style={{ marginTop: 8, minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, paddingHorizontal: 16, fontSize: 16, color: colors.textPrimary }}
               />
 
-              <Text className="mt-4 text-xs font-medium text-slate-400">LOCATION</Text>
+              <Text style={{ marginTop: 16, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, color: colors.textSecondary }}>LOCATION</Text>
               <TextInput
                 value={location}
                 onChangeText={setLocation}
                 placeholder="Area, City"
-                placeholderTextColor="#475569"
+                placeholderTextColor={colors.textSecondary}
                 returnKeyType="done"
                 onSubmitEditing={() => Keyboard.dismiss()}
-                className="mt-2 min-h-[48px] rounded-xl border border-slate-800 bg-slate-900 px-4 text-base text-white"
+                style={{ marginTop: 8, minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, paddingHorizontal: 16, fontSize: 16, color: colors.textPrimary }}
               />
 
               <Pressable
                 onPress={handleSubmit}
                 disabled={!isValid}
-                className={`mb-4 mt-6 min-h-[48px] items-center justify-center rounded-xl ${
-                  isValid ? 'bg-sky-600' : 'bg-sky-900'
-                }`}
+                style={{ marginBottom: 16, marginTop: 24, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: isValid ? colors.accent : colors.subpanel }}
               >
-                <Text className="text-base font-semibold text-white">Add &amp; Call Now</Text>
+                <Text style={{ fontSize: 16, fontWeight: '700', color: isValid ? '#FFFFFF' : colors.textSecondary }}>Add &amp; Call Now</Text>
               </Pressable>
             </ScrollView>
           </View>

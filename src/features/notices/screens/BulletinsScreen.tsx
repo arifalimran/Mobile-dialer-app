@@ -2,18 +2,20 @@ import React from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { Megaphone } from 'lucide-react-native';
 
+import { useAppTheme } from '../../../theme/ThemeContext';
 import { MOCK_BULLETINS } from '../constants/mockBulletins';
 import { useNoticeStore } from '../hooks/useNoticeStore';
 
 /** Drawer item [📢 Mandatory Bulletins] destination — full history + read status. */
 export const BulletinsScreen: React.FC = () => {
+  const { colors } = useAppTheme();
   const acknowledgedIds = useNoticeStore((state) => state.acknowledgedIds);
 
   return (
-    <ScrollView className="flex-1 bg-slate-950 px-5 pt-6" contentContainerStyle={{ paddingBottom: 32 }}>
-      <View className="flex-row items-center">
-        <Megaphone size={22} color="#38bdf8" />
-        <Text className="ml-2 text-xl font-semibold text-white">Bulletins</Text>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.canvas, paddingHorizontal: 20, paddingTop: 24 }} contentContainerStyle={{ paddingBottom: 32 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Megaphone size={22} color={colors.accent} />
+        <Text style={{ marginLeft: 8, fontSize: 20, fontWeight: '700', color: colors.textPrimary }}>Bulletins</Text>
       </View>
 
       {MOCK_BULLETINS.map((bulletin) => {
@@ -21,20 +23,25 @@ export const BulletinsScreen: React.FC = () => {
         return (
           <View
             key={bulletin.id}
-            className={`mt-4 rounded-2xl border p-4 ${
-              bulletin.priority === 'HIGH' ? 'border-amber-800 bg-amber-950/30' : 'border-slate-800 bg-slate-900'
-            }`}
+            style={{
+              marginTop: 16,
+              borderRadius: 18,
+              borderWidth: 1,
+              borderColor: bulletin.priority === 'HIGH' ? colors.warning : colors.border,
+              backgroundColor: bulletin.priority === 'HIGH' ? 'rgba(245,158,11,0.12)' : colors.card,
+              padding: 16,
+            }}
           >
-            <View className="flex-row items-center justify-between">
-              <Text className="flex-1 text-sm font-semibold text-white">{bulletin.title}</Text>
-              <Text className={`ml-2 text-xs font-semibold ${isRead ? 'text-emerald-400' : 'text-rose-400'}`}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ flex: 1, fontSize: 14, fontWeight: '700', color: colors.textPrimary }}>{bulletin.title}</Text>
+              <Text style={{ marginLeft: 8, fontSize: 11, fontWeight: '700', color: isRead ? colors.success : colors.danger }}>
                 {isRead ? 'READ' : 'UNREAD'}
               </Text>
             </View>
-            <Text className="mt-2 text-xs text-slate-400">
+            <Text style={{ marginTop: 8, fontSize: 11, color: colors.textSecondary }}>
               {new Date(bulletin.postedAt).toLocaleString()}
             </Text>
-            <Text className="mt-2 text-sm leading-5 text-slate-300">{bulletin.body}</Text>
+            <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 20, color: colors.textSecondary }}>{bulletin.body}</Text>
           </View>
         );
       })}

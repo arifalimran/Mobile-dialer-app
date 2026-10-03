@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, Text, TouchableWithoutFeedback, View } from 'react-native';
 import { LogOut, MapPin, Plus, Settings, Target } from 'lucide-react-native';
 
+import { useAppTheme } from '../../theme/ThemeContext';
 import { useAuthStore } from '../../features/auth/hooks/useAuthStore';
 import type { AgentRole } from '../../features/auth/authTypes';
 
@@ -87,6 +88,7 @@ export const AgentStatusSheet: React.FC<AgentStatusSheetProps> = ({
   onOpenSettings,
   onLogout,
 }) => {
+  const { colors } = useAppTheme();
   const loginAt = useAuthStore((state) => state.loginAt);
   const [now, setNow] = useState(Date.now());
   const [isConfirmingLogout, setIsConfirmingLogout] = useState(false);
@@ -108,75 +110,75 @@ export const AgentStatusSheet: React.FC<AgentStatusSheetProps> = ({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
-        <View className="flex-1 justify-end bg-black/60">
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: colors.overlay }}>
           <TouchableWithoutFeedback>
-            <View className="rounded-t-3xl border-t border-white/10 bg-slate-950 p-5">
-              <View className="flex-row items-center justify-between">
-                <Text className="text-lg font-bold tracking-tight text-white" numberOfLines={1}>
+            <View style={{ borderTopWidth: 1, borderTopColor: colors.border, borderRadius: 24, backgroundColor: colors.card, padding: 20 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={{ flex: 1, fontSize: 18, fontWeight: '800', color: colors.textPrimary }} numberOfLines={1}>
                   {agentName || 'Unregistered Agent'}
                 </Text>
-                <View className="rounded-full border border-sky-800 bg-sky-950 px-3 py-1">
-                  <Text className="text-xs font-semibold text-sky-400">{role.replace('_', ' ')}</Text>
+                <View style={{ borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, paddingHorizontal: 12, paddingVertical: 6 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: colors.accent }}>{role.replace('_', ' ')}</Text>
                 </View>
               </View>
-              <Text className="mt-1 font-mono text-xs tracking-wide text-slate-500">{corporateSim}</Text>
+              <Text style={{ marginTop: 4, fontFamily: 'monospace', fontSize: 11, letterSpacing: 0.8, color: colors.textSecondary }}>{corporateSim}</Text>
 
-              <View className="mt-4 rounded-2xl border border-white/10 bg-slate-900 p-4">
-                <Text className="font-mono text-xs tracking-wide text-slate-400">{formatBstNow(new Date(now))}</Text>
-                <View className="mt-2 flex-row items-center justify-between">
-                  <Text className="font-mono text-sm tracking-wide text-slate-300">
+              <View style={{ marginTop: 16, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, padding: 16 }}>
+                <Text style={{ fontFamily: 'monospace', fontSize: 11, letterSpacing: 0.8, color: colors.textSecondary }}>{formatBstNow(new Date(now))}</Text>
+                <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={{ fontFamily: 'monospace', fontSize: 13, letterSpacing: 0.8, color: colors.textPrimary }}>
                     ⏱ Session: {formatElapsed(loginAt ? now - loginAt : 0)}
                   </Text>
-                  <View className={`rounded-full border px-2 py-0.5 ${shiftPill.container}`}>
-                    <Text className={`text-[10px] font-semibold ${shiftPill.text}`}>{shiftPill.label}</Text>
+                  <View style={{ borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, paddingHorizontal: 8, paddingVertical: 2 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: shiftPill.text === 'text-emerald-400' ? colors.success : shiftPill.text === 'text-amber-400' ? colors.warning : colors.danger }}>{shiftPill.label}</Text>
                   </View>
                 </View>
               </View>
 
-              <View className="mt-4">
+              <View style={{ marginTop: 16 }}>
                 <Pressable
                   onPress={() => handleAction(onNavigateKpi)}
-                  className="min-h-[48px] flex-row items-center justify-between rounded-xl px-1"
+                  style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 12, paddingHorizontal: 4 }}
                 >
-                  <View className="flex-row items-center">
-                    <Target size={18} color="#94a3b8" />
-                    <Text className="ml-3 text-sm text-slate-200">My KPI &amp; Evaluation Grounds</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Target size={18} color={colors.textSecondary} />
+                    <Text style={{ marginLeft: 12, fontSize: 14, color: colors.textPrimary }}>My KPI &amp; Evaluation Grounds</Text>
                   </View>
-                  {hasKpiRevisionAlert && <View className="h-2.5 w-2.5 rounded-full bg-amber-500" />}
+                  {hasKpiRevisionAlert && <View style={{ height: 10, width: 10, borderRadius: 999, backgroundColor: colors.warning }} />}
                 </Pressable>
 
                 <Pressable
                   onPress={() => handleAction(onAddSelfSourcedLead)}
-                  className="min-h-[48px] flex-row items-center px-1"
+                  style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4 }}
                 >
-                  <Plus size={18} color="#94a3b8" />
-                  <Text className="ml-3 text-sm text-slate-200">Add Self-Sourced Lead</Text>
+                  <Plus size={18} color={colors.textSecondary} />
+                  <Text style={{ marginLeft: 12, fontSize: 14, color: colors.textPrimary }}>Add Self-Sourced Lead</Text>
                 </Pressable>
 
                 {canSeeSiteVisits && (
                   <Pressable
                     onPress={() => handleAction(onNavigateSiteVisits)}
-                    className="min-h-[48px] flex-row items-center px-1"
+                    style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4 }}
                   >
-                    <MapPin size={18} color="#94a3b8" />
-                    <Text className="ml-3 text-sm text-slate-200">Site Visits &amp; GPS Check-In</Text>
+                    <MapPin size={18} color={colors.textSecondary} />
+                    <Text style={{ marginLeft: 12, fontSize: 14, color: colors.textPrimary }}>Site Visits &amp; GPS Check-In</Text>
                   </Pressable>
                 )}
 
                 <Pressable
                   onPress={() => handleAction(onOpenSettings)}
-                  className="min-h-[48px] flex-row items-center px-1"
+                  style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4 }}
                 >
-                  <Settings size={18} color="#94a3b8" />
-                  <Text className="ml-3 text-sm text-slate-200">Line Settings</Text>
+                  <Settings size={18} color={colors.textSecondary} />
+                  <Text style={{ marginLeft: 12, fontSize: 14, color: colors.textPrimary }}>Line Settings</Text>
                 </Pressable>
 
                 <Pressable
                   onPress={() => setIsConfirmingLogout(true)}
-                  className="mt-2 min-h-[48px] flex-row items-center rounded-xl border-t border-white/10 px-1 pt-3"
+                  style={{ marginTop: 8, minHeight: 48, flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.border, borderRadius: 12, paddingHorizontal: 4, paddingTop: 12 }}
                 >
-                  <LogOut size={18} color="#fb7185" />
-                  <Text className="ml-3 text-sm font-semibold text-rose-400">End Shift &amp; Logout</Text>
+                  <LogOut size={18} color={colors.danger} />
+                  <Text style={{ marginLeft: 12, fontSize: 14, fontWeight: '700', color: colors.danger }}>End Shift &amp; Logout</Text>
                 </Pressable>
               </View>
             </View>
@@ -185,18 +187,18 @@ export const AgentStatusSheet: React.FC<AgentStatusSheetProps> = ({
       </TouchableWithoutFeedback>
 
       {isConfirmingLogout && (
-        <View className="absolute inset-0 items-center justify-center bg-black/70 px-8">
-          <View className="w-full rounded-2xl border border-white/10 bg-slate-950 p-5">
-            <Text className="text-base font-semibold text-white">End your shift?</Text>
-            <Text className="mt-2 text-sm text-slate-400">
+        <View style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 32 }}>
+          <View style={{ width: '100%', borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 20 }}>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textPrimary }}>End your shift?</Text>
+            <Text style={{ marginTop: 8, fontSize: 14, color: colors.textSecondary }}>
               You will be signed out and your session timer will reset.
             </Text>
-            <View className="mt-4 flex-row gap-3">
+            <View style={{ marginTop: 16, flexDirection: 'row', gap: 12 }}>
               <Pressable
                 onPress={() => setIsConfirmingLogout(false)}
-                className="min-h-[48px] flex-1 items-center justify-center rounded-xl border border-white/10 bg-slate-900"
+                style={{ minHeight: 48, flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel }}
               >
-                <Text className="text-sm font-semibold text-slate-300">Cancel</Text>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textSecondary }}>Cancel</Text>
               </Pressable>
               <Pressable
                 onPress={() => {
@@ -204,9 +206,9 @@ export const AgentStatusSheet: React.FC<AgentStatusSheetProps> = ({
                   onClose();
                   onLogout();
                 }}
-                className="min-h-[48px] flex-1 items-center justify-center rounded-xl bg-rose-600"
+                style={{ minHeight: 48, flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: colors.danger }}
               >
-                <Text className="text-sm font-semibold text-white">End Shift</Text>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>End Shift</Text>
               </Pressable>
             </View>
           </View>

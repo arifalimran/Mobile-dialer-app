@@ -1,8 +1,9 @@
 import React from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Bell, CalendarClock, ClipboardList, Clock, Phone, Warehouse, Wallet } from 'lucide-react-native';
+import { Bell, CalendarClock, Clock, Phone, Warehouse, Wallet } from 'lucide-react-native';
 
+import { useAppTheme } from '../../theme/ThemeContext';
 import type { AppScreen } from '../../types/navigation';
 
 type BottomTabScreen = 'DIALER' | 'CALLBACKS' | 'INVENTORY' | 'WALLET' | 'BULLETINS' | 'SHIFTS';
@@ -34,11 +35,17 @@ interface BottomTabBarProps {
  */
 export const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeScreen, onNavigate }) => {
   const insets = useSafeAreaInsets();
+  const { colors } = useAppTheme();
 
   return (
     <View
-      style={{ paddingBottom: Math.max(insets.bottom, Platform.OS === 'ios' ? 8 : 0) }}
-      className="flex-row border-t border-white/10 bg-[#070b12]"
+      style={{
+        flexDirection: 'row',
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+        backgroundColor: colors.card,
+        paddingBottom: Math.max(insets.bottom, Platform.OS === 'ios' ? 8 : 0),
+      }}
     >
       {TABS.map(({ screen, label, Icon }) => {
         const isActive = activeScreen === screen;
@@ -46,10 +53,10 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeScreen, onNavi
           <Pressable
             key={screen}
             onPress={() => onNavigate(screen)}
-            className="h-16 flex-1 items-center justify-center"
+            style={{ height: 64, flex: 1, alignItems: 'center', justifyContent: 'center' }}
           >
-            <Icon size={22} color={isActive ? '#0ea5e9' : '#64748b'} />
-            <Text className={`mt-1 text-[11px] font-semibold ${isActive ? 'text-sky-500' : 'text-slate-500'}`}>
+            <Icon size={22} color={isActive ? colors.brassAccent : colors.textSecondary} />
+            <Text style={{ marginTop: 4, fontSize: 11, fontWeight: '700', color: isActive ? colors.brassAccent : colors.textSecondary }}>
               {label}
             </Text>
           </Pressable>

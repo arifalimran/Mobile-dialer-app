@@ -37,8 +37,7 @@ import { MandatoryNoticeModal } from './src/features/notices/components/Mandator
 import { BulletinsScreen } from './src/features/notices/screens/BulletinsScreen';
 import { useUnreadBulletinCount } from './src/features/notices/hooks/useNoticeStore';
 
-import { useThemePalette } from './src/theme/useThemeStore';
-import { ThemeProvider } from './src/theme/ThemeContext';
+import { ThemeProvider, useAppTheme } from './src/theme/ThemeContext';
 import { DynamicWatermark } from './src/components/security/DynamicWatermark';
 import { ScheduledCallbacksScreen } from './src/features/callbacks/screens/ScheduledCallbacksScreen';
 import { StackingMatrixScreen } from './src/features/inventory/screens/StackingMatrixScreen';
@@ -71,6 +70,7 @@ function DialerScreen({
     addLeadToFront,
     scheduleCallback,
   } = useCallQueue();
+  const { colors } = useAppTheme();
   const { status, startCall, endCall, reset } = useTelephonyBridge();
   const { agentPhone, callProviderMode } = useAgentConfig();
 
@@ -99,25 +99,25 @@ function DialerScreen({
   };
 
   return (
-    <View className="flex-1">
+    <View style={{ flex: 1, backgroundColor: colors.canvas }}>
       <DialerLineHeader
         agentPhone={agentPhone}
         isOnShift={isOnShift}
         onToggleShift={onToggleShift}
       />
 
-      <ScrollView className="flex-1 px-4 pt-4" contentContainerStyle={{ paddingBottom: 32 }}>
+      <ScrollView style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }} contentContainerStyle={{ paddingBottom: 32 }}>
         <QueueTracker position={queuePosition} total={queueLength} />
 
         <Pressable
           onPress={onOpenAddLead}
-          className="mt-4 min-h-[48px] flex-row items-center justify-center rounded-xl border border-dashed border-white/10 bg-slate-900"
+          style={{ marginTop: 16, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card }}
         >
-          <Plus size={18} color="#38bdf8" />
-          <Text className="ml-2 text-sm font-semibold text-sky-400">Add Custom Lead</Text>
+          <Plus size={18} color={colors.accent} />
+          <Text style={{ marginLeft: 8, fontSize: 14, fontWeight: '700', color: colors.accent }}>Add Custom Lead</Text>
         </Pressable>
 
-        <View className="mt-4">
+        <View style={{ marginTop: 16 }}>
           {currentLead ? (
             <LeadCard
               lead={currentLead}
@@ -125,8 +125,8 @@ function DialerScreen({
               onStartCall={handleStartCall}
             />
           ) : (
-            <View className="rounded-2xl border border-white/10 bg-slate-900 p-6">
-              <Text className="text-center text-base text-slate-400">
+            <View style={{ borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 24 }}>
+              <Text style={{ textAlign: 'center', fontSize: 16, color: colors.textSecondary }}>
                 {isQueueComplete ? 'Queue complete. No more leads to call.' : 'Loading leads…'}
               </Text>
             </View>
@@ -136,10 +136,10 @@ function DialerScreen({
         {isActive && (
           <Pressable
             onPress={endCall}
-            className="mt-5 min-h-[48px] flex-row items-center justify-center rounded-xl bg-rose-600"
+            style={{ marginTop: 20, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#F43F5E' }}
           >
-            <PhoneOff size={18} color="#ffffff" />
-            <Text className="ml-2 text-base font-semibold text-white">
+            <PhoneOff size={18} color="#FFFFFF" />
+            <Text style={{ marginLeft: 8, fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>
               End Call &amp; Log Outcome
             </Text>
           </Pressable>
@@ -173,13 +173,13 @@ function DialerScreen({
  * issues (see PROJECT_STATUS.md).
  */
 function AppShell({ onLogout }: { onLogout: () => void }) {
+  const { colors, theme } = useAppTheme();
   const agentProfile = useAuthStore((state) => state.agentProfile);
   const role = useAuthStore((state) => state.role);
   const lockStatus = useShiftStore((state) => state.lockStatus);
   const lockedUntil = useShiftStore((state) => state.lockedUntil);
   const unreadBulletinCount = useUnreadBulletinCount();
   const hasKpiRevisionAlert = UPCOMING_KPI_REVISIONS.some((revision) => revision.role === role);
-  const palette = useThemePalette();
 
   const { agentPhone, callProviderMode, setAgentPhone, setCallProviderMode } = useAgentConfig();
 
@@ -194,7 +194,7 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
   const shiftStatus: ShiftStatus = isShiftLocked ? 'LOCKED' : isOnShift ? 'ON_DUTY' : 'BREAK';
 
   return (
-    <SafeAreaView className={`flex-1 ${palette.rootClassName}`} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.canvas }} edges={['top', 'left', 'right']}>
       <DynamicWatermark agentId={agentProfile?.corporateSim ?? 'AGT-01'} />
       <GlobalAppHeader
         agentName={agentProfile?.legalName ?? 'Agent'}
@@ -203,7 +203,7 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
         onOpenStatusSheet={() => setIsStatusSheetOpen(true)}
       />
 
-      <View className="flex-1">
+      <View style={{ flex: 1, backgroundColor: colors.canvas }}>
         {currentScreen === 'DIALER' && (
           <DialerScreen
             isAddLeadVisible={isAddLeadVisible}
@@ -266,23 +266,23 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
       <MandatoryNoticeModal />
 
       <Modal visible={Boolean(bridgeLead)} transparent animationType="slide" onRequestClose={() => setBridgeLead(null)}>
-        <View className="flex-1 items-center justify-end bg-black/50">
-          <View className="w-full rounded-t-3xl border-t border-white/10 bg-slate-950 p-5">
-            <Text className="text-lg font-bold text-white">Bridge Call</Text>
-            <Text className="mt-1 text-sm text-slate-400">
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <View style={{ width: '100%', borderTopWidth: 1, borderTopColor: colors.border, borderRadius: 24, backgroundColor: colors.card, padding: 20 }}>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>Bridge Call</Text>
+            <Text style={{ marginTop: 6, fontSize: 14, color: colors.textSecondary }}>
               {bridgeLead?.leadName ?? 'Lead'} is ready to connect through the licensed PBX bridge.
             </Text>
             <Pressable
               onPress={() => setBridgeLead(null)}
-              className="mt-5 min-h-[48px] items-center justify-center rounded-xl bg-sky-600"
+              style={{ marginTop: 20, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: colors.accent }}
             >
-              <Text className="text-sm font-bold text-white">Proceed to Bridge</Text>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: '#FFFFFF' }}>Proceed to Bridge</Text>
             </Pressable>
           </View>
         </View>
       </Modal>
 
-      <StatusBar style="light" />
+      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
     </SafeAreaView>
   );
 }
@@ -297,7 +297,7 @@ type PreAuthScreen = 'LOGIN' | 'REGISTER';
  * `kycStatus` to `VERIFIED`.
  */
 function RootRouter() {
-  const palette = useThemePalette();
+  const { colors, theme } = useAppTheme();
   const [screen, setScreen] = useState<'LOGIN' | 'REGISTER' | 'APP'>('LOGIN');
 
   if (screen === 'APP') {
@@ -305,7 +305,7 @@ function RootRouter() {
   }
 
   return (
-    <SafeAreaView className={`flex-1 ${palette.rootClassName}`} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.canvas }} edges={['top', 'left', 'right']}>
       {screen === 'REGISTER' ? (
         <AgentRegistrationScreen
           onComplete={() => setScreen('LOGIN')}
@@ -317,7 +317,7 @@ function RootRouter() {
           onSignedIn={() => setScreen('APP')}
         />
       )}
-      <StatusBar style="light" />
+      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
     </SafeAreaView>
   );
 }

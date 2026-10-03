@@ -9,6 +9,7 @@ export interface AppThemeTokens {
   textPrimary: string;
   textSecondary: string;
   accent: string;
+  brassAccent: string;
   accentSoft: string;
   accentStrong: string;
   success: string;
@@ -26,7 +27,8 @@ export const themeTokens: Record<ThemeMode, AppThemeTokens> = {
     border: '#2A3440',
     textPrimary: '#EDEDE7',
     textSecondary: '#A4A9B2',
-    accent: '#C89B4A',
+    accent: '#38BDF8',
+    brassAccent: '#C89B4A',
     accentSoft: '#E8C98A',
     accentStrong: '#A9772C',
     success: '#10B981',
@@ -42,7 +44,8 @@ export const themeTokens: Record<ThemeMode, AppThemeTokens> = {
     border: '#D8C9AE',
     textPrimary: '#1C232D',
     textSecondary: '#5E6673',
-    accent: '#A97C37',
+    accent: '#0284C7',
+    brassAccent: '#A97C37',
     accentSoft: '#E9D5A8',
     accentStrong: '#7E5D24',
     success: '#10B981',

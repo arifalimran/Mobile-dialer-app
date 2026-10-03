@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { X } from 'lucide-react-native';
 
+import { useAppTheme } from '../../../theme/ThemeContext';
 import type { CallProviderMode } from '../callingTypes';
 
 interface SettingsSheetProps {
@@ -29,6 +30,7 @@ export const SettingsSheet: React.FC<SettingsSheetProps> = ({
   onClose,
   onSave,
 }) => {
+  const { colors } = useAppTheme();
   const [draftPhone, setDraftPhone] = useState(agentPhone);
   const [draftMode, setDraftMode] = useState<CallProviderMode>(callProviderMode);
 
@@ -49,76 +51,63 @@ export const SettingsSheet: React.FC<SettingsSheetProps> = ({
     <Modal visible={visible} transparent animationType="slide">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        className="flex-1 justify-end"
+        style={{ flex: 1, justifyContent: 'flex-end' }}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View className="rounded-t-3xl border-t border-slate-800 bg-slate-950 p-5">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-lg font-semibold text-white">Agent Settings</Text>
+          <View style={{ borderTopWidth: 1, borderTopColor: colors.border, borderRadius: 24, backgroundColor: colors.card, padding: 20 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textPrimary }}>Agent Settings</Text>
               <Pressable
                 onPress={() => {
                   Keyboard.dismiss();
                   onClose();
                 }}
-                className="h-10 w-10 items-center justify-center rounded-full bg-slate-900"
+                style={{ height: 40, width: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: colors.subpanel }}
               >
-                <X size={18} color="#e2e8f0" />
+                <X size={18} color={colors.textPrimary} />
               </Pressable>
             </View>
 
-            <Text className="mt-5 text-xs font-medium text-slate-400">YOUR PHONE NUMBER</Text>
+            <Text style={{ marginTop: 20, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, color: colors.textSecondary }}>YOUR PHONE NUMBER</Text>
             <TextInput
               value={draftPhone}
               onChangeText={setDraftPhone}
               placeholder="+8801XXXXXXXXX"
-              placeholderTextColor="#475569"
+              placeholderTextColor={colors.textSecondary}
               keyboardType="phone-pad"
               returnKeyType="done"
               onSubmitEditing={() => Keyboard.dismiss()}
-              className="mt-2 min-h-[48px] rounded-xl border border-slate-800 bg-slate-900 px-4 text-base text-white"
+              style={{ marginTop: 8, minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, paddingHorizontal: 16, fontSize: 16, color: colors.textPrimary }}
             />
 
-        <Text className="mt-5 text-xs font-medium text-slate-400">CALLING PROVIDER</Text>
-        <View className="mt-2 flex-row gap-3">
-          <Pressable
-            onPress={() => setDraftMode('NATIVE_SIM')}
-            className={`min-h-[48px] flex-1 items-center justify-center rounded-xl border ${
-              draftMode === 'NATIVE_SIM' ? 'border-sky-600 bg-sky-950' : 'border-slate-800 bg-slate-900'
-            }`}
-          >
-            <Text
-              className={`text-sm font-semibold ${
-                draftMode === 'NATIVE_SIM' ? 'text-sky-400' : 'text-slate-400'
-              }`}
-            >
-              Native SIM
+            <Text style={{ marginTop: 20, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, color: colors.textSecondary }}>CALLING PROVIDER</Text>
+            <View style={{ marginTop: 8, flexDirection: 'row', gap: 12 }}>
+              <Pressable
+                onPress={() => setDraftMode('NATIVE_SIM')}
+                style={{ minHeight: 48, flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: draftMode === 'NATIVE_SIM' ? colors.accent : colors.border, backgroundColor: draftMode === 'NATIVE_SIM' ? colors.subpanel : colors.card }}
+              >
+                <Text style={{ fontSize: 14, fontWeight: '700', color: draftMode === 'NATIVE_SIM' ? colors.accent : colors.textSecondary }}>
+                  Native SIM
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setDraftMode('IPTSP_BRIDGE')}
+                style={{ minHeight: 48, flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: draftMode === 'IPTSP_BRIDGE' ? colors.accent : colors.border, backgroundColor: draftMode === 'IPTSP_BRIDGE' ? colors.subpanel : colors.card }}
+              >
+                <Text style={{ fontSize: 14, fontWeight: '700', color: draftMode === 'IPTSP_BRIDGE' ? colors.accent : colors.textSecondary }}>
+                  IPTSP Bridge
+                </Text>
+              </Pressable>
+            </View>
+            <Text style={{ marginTop: 8, fontSize: 12, color: colors.textSecondary }}>
+              Native SIM opens your phone&apos;s own dialer (masked leads cannot be dialed this way). IPTSP Bridge simulates the masked cloud PBX call.
             </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setDraftMode('IPTSP_BRIDGE')}
-            className={`min-h-[48px] flex-1 items-center justify-center rounded-xl border ${
-              draftMode === 'IPTSP_BRIDGE' ? 'border-sky-600 bg-sky-950' : 'border-slate-800 bg-slate-900'
-            }`}
-          >
-            <Text
-              className={`text-sm font-semibold ${
-                draftMode === 'IPTSP_BRIDGE' ? 'text-sky-400' : 'text-slate-400'
-              }`}
-            >
-              IPTSP Bridge
-            </Text>
-          </Pressable>
-        </View>
-        <Text className="mt-2 text-xs text-slate-500">
-          Native SIM opens your phone&apos;s own dialer (masked leads cannot be dialed this way).
-          IPTSP Bridge simulates the masked cloud PBX call.
-        </Text>
 
             <Pressable
               onPress={handleSave}
-              className="mt-6 min-h-[48px] items-center justify-center rounded-xl bg-sky-600"
+              style={{ marginTop: 24, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: colors.accent }}
             >
-              <Text className="text-base font-semibold text-white">Save Settings</Text>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: '#FFFFFF' }}>Save Settings</Text>
             </Pressable>
           </View>
         </TouchableWithoutFeedback>

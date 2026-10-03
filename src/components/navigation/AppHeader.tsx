@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Bell, Building2, Moon, Sun } from 'lucide-react-native';
 
-import { useThemeStore } from '../../theme/useThemeStore';
+import { useAppTheme } from '../../theme/ThemeContext';
 
 interface AppHeaderProps {
   agentName: string;
@@ -30,38 +30,31 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onOpenBulletins,
   onOpenStatusSheet,
 }) => {
-  const mode = useThemeStore((state) => state.mode);
-  const toggleTheme = useThemeStore((state) => state.toggleTheme);
+  const { colors, theme, toggleTheme } = useAppTheme();
 
   return (
-    <View className="h-14 flex-row items-center justify-between border-b border-white/10 bg-[#070b12] px-4">
-      <View className="flex-row items-center">
-        <Building2 size={18} color="#0ea5e9" />
-        <Text className="ml-2 text-sm font-bold tracking-tight text-white">SPACE MAKER</Text>
+    <View style={{ height: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Building2 size={18} color={colors.accent} />
+        <Text style={{ marginLeft: 8, fontSize: 14, fontWeight: '800', letterSpacing: 0.3, color: colors.textPrimary }}>SPACE MAKER</Text>
       </View>
 
-      <View className="flex-row items-center">
-        <Pressable
-          onPress={toggleTheme}
-          className="h-12 w-12 items-center justify-center rounded-full"
-        >
-          {mode === 'dark' ? <Moon size={20} color="#e2e8f0" /> : <Sun size={20} color="#f59e0b" />}
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Pressable onPress={toggleTheme} style={{ height: 48, width: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: colors.subpanel }}>
+          {theme === 'dark' ? <Moon size={20} color={colors.textPrimary} /> : <Sun size={20} color={colors.brassAccent} />}
         </Pressable>
 
-        <Pressable onPress={onOpenBulletins} className="h-12 w-12 items-center justify-center rounded-full">
+        <Pressable onPress={onOpenBulletins} style={{ height: 48, width: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: colors.subpanel, marginLeft: 8 }}>
           <View>
-            <Bell size={20} color="#e2e8f0" />
+            <Bell size={20} color={colors.textPrimary} />
             {unreadBulletinCount > 0 && (
-              <View className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-rose-500" />
+              <View style={{ position: 'absolute', right: -4, top: -2, height: 10, width: 10, borderRadius: 999, backgroundColor: '#F43F5E' }} />
             )}
           </View>
         </Pressable>
 
-        <Pressable
-          onPress={onOpenStatusSheet}
-          className="ml-1 h-10 w-10 items-center justify-center rounded-full border border-sky-800 bg-sky-950"
-        >
-          <Text className="font-mono text-xs font-bold tracking-wide text-sky-400">
+        <Pressable onPress={onOpenStatusSheet} style={{ marginLeft: 8, height: 40, width: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel }}>
+          <Text style={{ fontSize: 11, fontWeight: '800', letterSpacing: 0.6, color: colors.accent }}>
             {getInitials(agentName)}
           </Text>
         </Pressable>

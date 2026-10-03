@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { CalendarClock, Lock, Phone } from 'lucide-react-native';
 
+import { useAppTheme } from '../../../theme/ThemeContext';
 import { OPERATIONS_ADMIN_PHONE } from '../../../config/constants';
 import { SHIFT_SLOTS } from '../constants/shiftSlots';
 import { useShiftStore } from '../hooks/useShiftStore';
@@ -12,6 +13,7 @@ function todayIso(): string {
 
 /** Module 5 screen: pick a shift slot, see current booking, or see the penalty lockout banner. */
 export const ShiftBookingScreen: React.FC = () => {
+  const { colors } = useAppTheme();
   const { myBooking, lockStatus, lockedUntil, bookSlot, cancelBooking, clearExpiredLock } =
     useShiftStore();
   const [dateIso] = useState(todayIso());
@@ -27,32 +29,32 @@ export const ShiftBookingScreen: React.FC = () => {
   };
 
   return (
-    <ScrollView className="flex-1 bg-slate-950 px-5 pt-6" contentContainerStyle={{ paddingBottom: 32 }}>
-      <View className="flex-row items-center">
-        <CalendarClock size={22} color="#38bdf8" />
-        <Text className="ml-2 text-xl font-bold tracking-tight text-white">Shift Slot Booking</Text>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.canvas, paddingHorizontal: 20, paddingTop: 24 }} contentContainerStyle={{ paddingBottom: 32 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <CalendarClock size={22} color={colors.accent} />
+        <Text style={{ marginLeft: 8, fontSize: 20, fontWeight: '800', letterSpacing: 0.3, color: colors.textPrimary }}>Shift Slot Booking</Text>
       </View>
-      <Text className="mt-1 font-mono text-sm tracking-wide text-slate-400">Today · {dateIso}</Text>
+      <Text style={{ marginTop: 4, fontFamily: 'monospace', fontSize: 12, letterSpacing: 0.8, color: colors.textSecondary }}>Today · {dateIso}</Text>
 
       {isLocked && (
-        <View className="mt-5 rounded-2xl border border-rose-800 bg-rose-950/40 p-4">
-          <View className="flex-row items-center">
-            <Lock size={16} color="#fb7185" />
-            <Text className="ml-2 text-sm font-semibold text-rose-300">Shift Booking Locked</Text>
+        <View style={{ marginTop: 20, borderRadius: 18, borderWidth: 1, borderColor: '#F43F5E', backgroundColor: 'rgba(244,63,94,0.12)', padding: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Lock size={16} color={colors.danger} />
+            <Text style={{ marginLeft: 8, fontSize: 14, fontWeight: '700', color: colors.danger }}>Shift Booking Locked</Text>
           </View>
-          <Text className="mt-2 text-xs text-rose-200">
+          <Text style={{ marginTop: 8, fontSize: 12, lineHeight: 18, color: '#FEC7D0' }}>
             A late cancellation or no-show triggered a 7-day penalty. Booking unlocks on{' '}
-            <Text className="font-mono tracking-wide">
+            <Text style={{ fontFamily: 'monospace', letterSpacing: 0.8, color: '#FEC7D0' }}>
               {lockedUntil ? new Date(lockedUntil).toLocaleString() : '—'}
             </Text>
             .
           </Text>
           <Pressable
             onPress={handleContactOps}
-            className="mt-3 min-h-[48px] flex-row items-center justify-center rounded-xl bg-rose-700"
+            style={{ marginTop: 12, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: colors.danger }}
           >
-            <Phone size={16} color="#ffffff" />
-            <Text className="ml-2 text-sm font-semibold text-white">
+            <Phone size={16} color="#FFFFFF" />
+            <Text style={{ marginLeft: 8, fontSize: 13, fontWeight: '700', color: '#FFFFFF' }}>
               Contact Operations Admin to Request Early Unlock
             </Text>
           </Pressable>
@@ -60,26 +62,26 @@ export const ShiftBookingScreen: React.FC = () => {
       )}
 
       {myBooking && !isLocked && (
-        <View className="mt-5 rounded-2xl border border-emerald-800 bg-emerald-950/40 p-4">
-          <Text className="text-sm font-semibold text-emerald-300">Active Booking</Text>
-          <Text className="mt-1 text-sm text-emerald-100">
+        <View style={{ marginTop: 20, borderRadius: 18, borderWidth: 1, borderColor: colors.success, backgroundColor: 'rgba(16,185,129,0.12)', padding: 16 }}>
+          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.success }}>Active Booking</Text>
+          <Text style={{ marginTop: 6, fontSize: 14, color: colors.textPrimary }}>
             {SHIFT_SLOTS.find((slot) => slot.id === myBooking.slotId)?.label ?? myBooking.slotId}
           </Text>
-          <Text className="mt-1 text-xs text-emerald-400">
+          <Text style={{ marginTop: 6, fontSize: 11, color: colors.success }}>
             Cancelling less than {6} hours before start applies a 7-day penalty.
           </Text>
           <Pressable
             onPress={cancelBooking}
-            className="mt-3 min-h-[48px] items-center justify-center rounded-xl border border-emerald-700 bg-slate-950"
+            style={{ marginTop: 12, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.success, backgroundColor: colors.card }}
           >
-            <Text className="text-sm font-semibold text-emerald-300">Cancel Booking</Text>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: colors.success }}>Cancel Booking</Text>
           </Pressable>
         </View>
       )}
 
       {!isLocked && (
-        <View className="mt-5">
-          <Text className="text-xs font-medium text-slate-400">AVAILABLE SLOTS</Text>
+        <View style={{ marginTop: 20 }}>
+          <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 0.9, color: colors.textSecondary }}>AVAILABLE SLOTS</Text>
           {SHIFT_SLOTS.map((slot) => {
             const isMine = myBooking?.slotId === slot.id;
             return (
@@ -87,18 +89,21 @@ export const ShiftBookingScreen: React.FC = () => {
                 key={slot.id}
                 onPress={() => bookSlot(slot.id, dateIso)}
                 disabled={!!myBooking}
-                className={`mt-2 min-h-[56px] flex-row items-center justify-between rounded-xl border px-4 ${
-                  isMine
-                    ? 'border-emerald-700 bg-emerald-950/40'
-                    : myBooking
-                      ? 'border-slate-900 bg-slate-900/60'
-                      : 'border-white/10 bg-slate-900'
-                }`}
+                style={{
+                  marginTop: 10,
+                  minHeight: 56,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: isMine ? colors.success : myBooking ? colors.border : colors.border,
+                  backgroundColor: isMine ? 'rgba(16,185,129,0.12)' : myBooking ? colors.subpanel : colors.card,
+                  paddingHorizontal: 16,
+                }}
               >
-                <Text className={`text-sm ${isMine ? 'text-emerald-300' : 'text-slate-200'}`}>
-                  {slot.label}
-                </Text>
-                {isMine && <Text className="text-xs font-semibold text-emerald-400">BOOKED</Text>}
+                <Text style={{ fontSize: 14, color: isMine ? colors.success : colors.textPrimary }}>{slot.label}</Text>
+                {isMine && <Text style={{ fontSize: 11, fontWeight: '700', color: colors.success }}>BOOKED</Text>}
               </Pressable>
             );
           })}

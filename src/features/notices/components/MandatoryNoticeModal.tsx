@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, View, type NativeSyntheticEvent, type NativeScrollEvent } from 'react-native';
 import { Megaphone } from 'lucide-react-native';
 
+import { useAppTheme } from '../../../theme/ThemeContext';
 import { useNoticeStore, useUnreadHighPriorityBulletin } from '../hooks/useNoticeStore';
 
 const SCROLL_BOTTOM_THRESHOLD_PX = 24;
@@ -13,6 +14,7 @@ const SCROLL_BOTTOM_THRESHOLD_PX = 24;
  * Understood" becomes enabled, then records an acknowledgment timestamp.
  */
 export const MandatoryNoticeModal: React.FC = () => {
+  const { colors } = useAppTheme();
   const bulletin = useUnreadHighPriorityBulletin();
   const acknowledge = useNoticeStore((state) => state.acknowledge);
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
@@ -47,31 +49,36 @@ export const MandatoryNoticeModal: React.FC = () => {
 
   return (
     <Modal visible transparent animationType="fade">
-      <View className="flex-1 items-center justify-center bg-black/80 px-5">
-        <View className="max-h-[80%] w-full rounded-2xl border border-amber-800 bg-slate-950 p-5">
-          <View className="flex-row items-center">
-            <Megaphone size={20} color="#fbbf24" />
-            <Text className="ml-2 text-lg font-semibold text-white">{bulletin.title}</Text>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.72)', paddingHorizontal: 20 }}>
+        <View style={{ maxHeight: '80%', width: '100%', borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 20 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Megaphone size={20} color={colors.warning} />
+            <Text style={{ marginLeft: 8, fontSize: 18, fontWeight: '700', color: colors.textPrimary }}>{bulletin.title}</Text>
           </View>
 
           <ScrollView
-            className="mt-4"
+            style={{ marginTop: 16 }}
             onScroll={handleScroll}
             scrollEventThrottle={32}
             onLayout={(event) => setViewportHeight(event.nativeEvent.layout.height)}
             onContentSizeChange={handleContentSizeChange}
           >
-            <Text className="text-sm leading-6 text-slate-300">{bulletin.body}</Text>
+            <Text style={{ fontSize: 14, lineHeight: 22, color: colors.textSecondary }}>{bulletin.body}</Text>
           </ScrollView>
 
           <Pressable
             onPress={() => acknowledge(bulletin.id)}
             disabled={!hasScrolledToBottom}
-            className={`mt-5 min-h-[48px] items-center justify-center rounded-xl ${
-              hasScrolledToBottom ? 'bg-emerald-600' : 'bg-slate-800'
-            }`}
+            style={{
+              marginTop: 20,
+              minHeight: 48,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 12,
+              backgroundColor: hasScrolledToBottom ? colors.success : colors.subpanel,
+            }}
           >
-            <Text className="text-base font-semibold text-white">
+            <Text style={{ fontSize: 15, fontWeight: '700', color: hasScrolledToBottom ? '#F7F3EE' : colors.textSecondary }}>
               {hasScrolledToBottom ? '☑️ I Have Read & Understood' : 'Scroll to the bottom to continue'}
             </Text>
           </Pressable>

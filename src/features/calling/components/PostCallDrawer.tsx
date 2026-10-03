@@ -20,6 +20,7 @@ import {
 } from 'lucide-react-native';
 
 import { DatePickerModal } from '../../../components/ui/DatePickerModal';
+import { useAppTheme } from '../../../theme/ThemeContext';
 
 import type { AudioMemoMetadata, Disposition, DispositionSubmission } from '../callingTypes';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
@@ -69,6 +70,7 @@ export const PostCallDrawer: React.FC<PostCallDrawerProps> = ({
   leadId,
   onSubmit,
 }) => {
+  const { colors } = useAppTheme();
   const { isRecording, durationMs, startRecording, stopRecording } = useAudioRecorder();
   const [audioMemo, setAudioMemo] = useState<AudioMemoMetadata | null>(null);
   const [isSchedulingCallback, setIsSchedulingCallback] = useState(false);
@@ -142,122 +144,114 @@ export const PostCallDrawer: React.FC<PostCallDrawerProps> = ({
     <Modal visible={visible} transparent animationType="slide">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        className="flex-1 justify-end"
+        style={{ flex: 1, justifyContent: 'flex-end' }}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View className="rounded-t-3xl border-t border-slate-800 bg-slate-950 p-5">
-            <Text className="text-lg font-semibold text-white">Log Call Outcome</Text>
-            <Text className="mt-1 text-sm text-slate-400">
+          <View style={{ borderTopWidth: 1, borderTopColor: colors.border, borderRadius: 24, backgroundColor: colors.card, padding: 20 }}>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textPrimary }}>Log Call Outcome</Text>
+            <Text style={{ marginTop: 4, fontSize: 14, color: colors.textSecondary }}>
               Select a disposition to advance to the next lead.
             </Text>
 
-        <View className="mt-5 flex-row items-center rounded-xl border border-slate-800 bg-slate-900 px-4 py-3">
-          <Pressable
-            onPressIn={handleMicPressIn}
-            onPressOut={handleMicPressOut}
-            className={`h-12 w-12 items-center justify-center rounded-full ${
-              isRecording ? 'bg-rose-600' : 'bg-slate-800'
-            }`}
-          >
-            {isRecording ? (
-              <Square size={18} color="#ffffff" />
-            ) : (
-              <Mic size={20} color="#ffffff" />
-            )}
-          </Pressable>
-          <Text className="ml-3 text-sm text-slate-300">
-            {isRecording
-              ? `Recording… ${seconds}s / 15s`
-              : audioMemo
-                ? `Voice memo captured (${Math.floor(audioMemo.durationMs / 1000)}s)`
-                : 'Hold to record a 15s debrief'}
-          </Text>
-        </View>
-
-        {isSchedulingCallback ? (
-          <View className="mt-5 rounded-xl border border-amber-800 bg-amber-950/40 p-4">
-            <Text className="text-sm font-semibold text-amber-300">Schedule Follow-up</Text>
-
-            <View className="mt-3 flex-row flex-wrap gap-2">
+            <View style={{ marginTop: 20, flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, paddingHorizontal: 16, paddingVertical: 12 }}>
               <Pressable
-                onPress={() => handlePresetHours(2)}
-                className="min-h-[48px] items-center justify-center rounded-lg border border-amber-800 bg-slate-950 px-3"
+                onPressIn={handleMicPressIn}
+                onPressOut={handleMicPressOut}
+                style={{ height: 48, width: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: isRecording ? '#F43F5E' : colors.subpanel }}
               >
-                <Text className="text-sm text-amber-100">In 2 hours</Text>
+                {isRecording ? <Square size={18} color="#ffffff" /> : <Mic size={20} color="#ffffff" />}
               </Pressable>
-              <Pressable
-                onPress={handleTomorrowMorning}
-                className="min-h-[48px] items-center justify-center rounded-lg border border-amber-800 bg-slate-950 px-3"
-              >
-                <Text className="text-sm text-amber-100">Tomorrow Morning</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => setShowCustomDateTime(true)}
-                className="min-h-[48px] items-center justify-center rounded-lg border border-amber-800 bg-slate-950 px-3"
-              >
-                <Text className="text-sm text-amber-100">Custom date/time</Text>
-              </Pressable>
-            </View>
-
-            <DatePickerModal
-              visible={showCustomDateTime}
-              mode="datetime"
-              title="Schedule Follow-up"
-              onConfirm={(date) => {
-                setCallbackAt(date.getTime());
-                setShowCustomDateTime(false);
-              }}
-              onClose={() => setShowCustomDateTime(false)}
-            />
-
-            {callbackAt && (
-              <Text className="mt-2 text-xs text-amber-200">
-                Scheduled for {new Date(callbackAt).toLocaleString()}
+              <Text style={{ marginLeft: 12, fontSize: 14, color: colors.textSecondary }}>
+                {isRecording
+                  ? `Recording… ${seconds}s / 15s`
+                  : audioMemo
+                    ? `Voice memo captured (${Math.floor(audioMemo.durationMs / 1000)}s)`
+                    : 'Hold to record a 15s debrief'}
               </Text>
-            )}
-
-            <TextInput
-              value={callbackNote}
-              onChangeText={setCallbackNote}
-              placeholder="Follow-up Notes / Summary of Last Talk"
-              placeholderTextColor="#78716c"
-              multiline
-              numberOfLines={3}
-              className="mt-3 min-h-[80px] rounded-lg border border-amber-800 bg-slate-950 px-3 py-2 text-sm text-white"
-            />
-
-            <View className="mt-3 flex-row gap-2">
-              <Pressable
-                onPress={resetCallbackState}
-                className="min-h-[48px] flex-1 items-center justify-center rounded-lg border border-slate-700"
-              >
-                <Text className="text-sm font-semibold text-slate-300">Cancel</Text>
-              </Pressable>
-              <Pressable
-                onPress={handleConfirmCallback}
-                disabled={!callbackAt || callbackNote.trim().length === 0}
-                className={`min-h-[48px] flex-1 items-center justify-center rounded-lg ${
-                  !callbackAt || callbackNote.trim().length === 0 ? 'bg-amber-900' : 'bg-amber-600'
-                }`}
-              >
-                <Text className="text-sm font-semibold text-white">Confirm &amp; Log</Text>
-              </Pressable>
             </View>
-          </View>
-        ) : (
-          <View className="mt-5 flex-row flex-wrap gap-3">
-            {DISPOSITION_OPTIONS.map(({ value, label, Icon, className }) => (
-              <Pressable
-                key={value}
-                onPress={() => handleDispositionPress(value)}
-                className={`min-h-[48px] w-[48%] flex-row items-center justify-center rounded-xl ${className}`}
-              >
-                <Icon size={18} color="#ffffff" />
-                <Text className="ml-2 text-sm font-semibold text-white">{label}</Text>
-              </Pressable>
-            ))}
-          </View>
-        )}
+
+            {isSchedulingCallback ? (
+              <View style={{ marginTop: 20, borderRadius: 16, borderWidth: 1, borderColor: colors.warning, backgroundColor: 'rgba(245,158,11,0.12)', padding: 16 }}>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.warning }}>Schedule Follow-up</Text>
+
+                <View style={{ marginTop: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  <Pressable
+                    onPress={() => handlePresetHours(2)}
+                    style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 10, borderWidth: 1, borderColor: colors.warning, backgroundColor: colors.card, paddingHorizontal: 12 }}
+                  >
+                    <Text style={{ fontSize: 13, color: colors.textPrimary }}>In 2 hours</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={handleTomorrowMorning}
+                    style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 10, borderWidth: 1, borderColor: colors.warning, backgroundColor: colors.card, paddingHorizontal: 12 }}
+                  >
+                    <Text style={{ fontSize: 13, color: colors.textPrimary }}>Tomorrow Morning</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setShowCustomDateTime(true)}
+                    style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 10, borderWidth: 1, borderColor: colors.warning, backgroundColor: colors.card, paddingHorizontal: 12 }}
+                  >
+                    <Text style={{ fontSize: 13, color: colors.textPrimary }}>Custom date/time</Text>
+                  </Pressable>
+                </View>
+
+                <DatePickerModal
+                  visible={showCustomDateTime}
+                  mode="datetime"
+                  title="Schedule Follow-up"
+                  onConfirm={(date) => {
+                    setCallbackAt(date.getTime());
+                    setShowCustomDateTime(false);
+                  }}
+                  onClose={() => setShowCustomDateTime(false)}
+                />
+
+                {callbackAt && (
+                  <Text style={{ marginTop: 8, fontSize: 12, color: colors.textPrimary }}>
+                    Scheduled for {new Date(callbackAt).toLocaleString()}
+                  </Text>
+                )}
+
+                <TextInput
+                  value={callbackNote}
+                  onChangeText={setCallbackNote}
+                  placeholder="Follow-up Notes / Summary of Last Talk"
+                  placeholderTextColor="#78716c"
+                  multiline
+                  numberOfLines={3}
+                  style={{ marginTop: 12, minHeight: 80, borderRadius: 10, borderWidth: 1, borderColor: colors.warning, backgroundColor: colors.card, padding: 12, fontSize: 14, color: colors.textPrimary }}
+                />
+
+                <View style={{ marginTop: 12, flexDirection: 'row', gap: 8 }}>
+                  <Pressable
+                    onPress={resetCallbackState}
+                    style={{ minHeight: 48, flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 10, borderWidth: 1, borderColor: colors.border }}
+                  >
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textSecondary }}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={handleConfirmCallback}
+                    disabled={!callbackAt || callbackNote.trim().length === 0}
+                    style={{ minHeight: 48, flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: !callbackAt || callbackNote.trim().length === 0 ? colors.subpanel : colors.warning }}
+                  >
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: !callbackAt || callbackNote.trim().length === 0 ? colors.textSecondary : '#FFFFFF' }}>Confirm &amp; Log</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <View style={{ marginTop: 20, flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+                {DISPOSITION_OPTIONS.map(({ value, label, Icon, className }) => (
+                  <Pressable
+                    key={value}
+                    onPress={() => handleDispositionPress(value)}
+                    style={{ minHeight: 48, width: '48%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: value === 'BOOK_SITE_VISIT' ? '#10B981' : value === 'CALLBACK_LATER' ? '#F59E0B' : value === 'SEND_WHATSAPP_INFO' ? '#38BDF8' : '#F43F5E' }}
+                  >
+                    <Icon size={18} color="#ffffff" />
+                    <Text style={{ marginLeft: 8, fontSize: 13, fontWeight: '700', color: '#FFFFFF' }}>{label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
           </View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>

@@ -1,6 +1,8 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { useAppTheme } from '../../../theme/ThemeContext';
+
 interface AppHeaderProps {
   agentPhone: string;
   isOnShift: boolean;
@@ -12,22 +14,22 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   isOnShift,
   onToggleShift,
 }) => {
+  const { colors } = useAppTheme();
+
   return (
-    <View className="flex-row items-center justify-between border-b border-white/10 bg-[#070b12] px-4 py-3">
-      <View className="flex-1 pr-3">
-        <Text className="text-xs font-medium text-slate-500">ACTIVE LINE</Text>
-        <Text className="mt-0.5 font-mono text-base font-semibold tracking-wide text-white" numberOfLines={1}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.card, paddingHorizontal: 16, paddingVertical: 12 }}>
+      <View style={{ flex: 1, paddingRight: 12 }}>
+        <Text style={{ fontSize: 11, fontWeight: '600', color: colors.textSecondary }}>ACTIVE LINE</Text>
+        <Text style={{ marginTop: 4, fontFamily: 'monospace', fontSize: 15, fontWeight: '700', letterSpacing: 0.8, color: colors.textPrimary }} numberOfLines={1}>
           {agentPhone ? `Line: ${agentPhone}` : 'Line: Not configured'}
         </Text>
       </View>
 
       <Pressable
         onPress={onToggleShift}
-        className={`min-h-[48px] shrink-0 items-center justify-center rounded-full border px-4 ${
-          isOnShift ? 'border-emerald-700 bg-emerald-950' : 'border-slate-700 bg-slate-900'
-        }`}
+        style={{ minHeight: 48, flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: 999, borderWidth: 1, borderColor: isOnShift ? colors.success : colors.border, backgroundColor: isOnShift ? 'rgba(16,185,129,0.12)' : colors.subpanel, paddingHorizontal: 16 }}
       >
-        <Text className={`text-xs font-semibold ${isOnShift ? 'text-emerald-400' : 'text-slate-400'}`}>
+        <Text style={{ fontSize: 11, fontWeight: '700', color: isOnShift ? colors.success : colors.textSecondary }}>
           {isOnShift ? 'On Shift' : 'Off Shift'}
         </Text>
       </Pressable>
