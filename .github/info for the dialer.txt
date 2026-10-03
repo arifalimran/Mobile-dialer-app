@@ -1,0 +1,128 @@
+Create a folder named `.github` in your project root, and save the content below as **`.github/copilot-instructions.md`**. GitHub Copilot will read this file automatically on every chat interaction and inline code completion.
+
+```markdown
+# Space Maker Limited: Mobile Dialer MVP & Telephony Specification
+
+## 1. Project Overview & Operational Context
+This project houses the mobile calling front-end for **Space Maker Limited**, an asset-light, multi-vertical enterprise covering Land Sharing Partnerships, Real Estate Development, Turnkey Interiors, and Structural Construction[cite: 2, 8].
+The primary purpose of this application is to empower remote micro-callers (homemakers, students, distributed freelancers) to work through a controlled lead queue while strictly protecting investor database privacy and adhering to local Bangladesh telecommunication laws[cite: 2, 5, 8].
+
+- **Primary Goal:** Provide a clean, single-screen masked dialer workflow featuring lead cards, a 48px+ calling trigger, a mandatory post-call disposition drawer, a 15-second voice memo debrief recorder, and automated trigger payloads[cite: 1, 2, 6].
+- **Core Strategy:** Build and test the React Native front-end dialer harness first before integrating the full ERP or complex back-office systems[cite: 3].
+
+## 2. Technology Stack & Hard Constraints
+- **Framework:** React Native via Expo (TypeScript strict mode)[cite: 2, 3].
+- **Styling:** NativeWind (Tailwind CSS for React Native)[cite: 2, 3]. Use inline utility classes (`className="..."`) exclusively[cite: 2].
+- **Icons:** `lucide-react-native` strictly[cite: 2, 3]. Do not import from any other icon library[cite: 2].
+- **State Management:** Zustand for UI and session state; TanStack React Query for asynchronous server state[cite: 1, 2, 3].
+- **Audio / Media:** `expo-av` for voice recording and playback[cite: 1].
+- **Security:** `expo-secure-store` for tokens[cite: 2, 3]. Never store raw phone numbers in local storage or AsyncStorage[cite: 2].
+- **Design Palette:**
+  - Backgrounds: Dark slate palette (`bg-slate-950`, `bg-slate-900`, `bg-slate-800`)[cite: 2].
+  - Accents: Sky blue (`#0284c7`, `#38bdf8`) for actions, Emerald (`#10b981`) for completed/success states, Amber (`#f59e0b`) for pending/callbacks, Rose (`#f43f5e`) for alarms/urgent actions[cite: 2].
+- **Touch Target Constraint:** Minimum 48px height and width for all interactive elements to prevent mis-taps on mobile devices[cite: 1, 2].
+
+## 3. Regulatory Rules & Telephony Flow (BTRC / Bangladesh Compliance)
+- **Zero CLI Spoofing:** In compliance with BTRC regulations, CLI spoofing and unverified foreign VoIP gateways are strictly prohibited[cite: 5]. All outbound calls run via an in-country licensed IPTSP 096xx PBX bridge (e.g., AmberIT, Link3, BDCOM)[cite: 1, 5].
+- **Customer Phone Number Masking:**
+  - Raw phone numbers must NEVER be exposed in clear text to remote agents (display format: `+880 1819-***-34`)[cite: 1, 2, 6].
+  - Clipboard copy-paste (`selectable={false}`) and long-press actions on customer phone numbers must be completely disabled[cite: 1, 2, 6].
+- **Two-Way PSTN Call Bridge Execution:**
+  - Remote callers tap the primary "Connect Call" action[cite: 1].
+  - The app dispatches `POST /api/v1/telephony/bridge-call` with `{ agentPhone, leadId }`[cite: 1].
+  - The PBX rings the caller's phone, rings the prospect via the company 096xx number, and bridges both lines together[cite: 1, 5].
+
+## 4. Architectural Pattern: Feature-Sliced Design (FSD)
+Organize all front-end codebase files according to this directory tree[cite: 2, 7]:
+
+```text
+src/
+├── api/                         # Central API client, endpoints, React Query client
+├── components/                  # Global primitive components (buttons, text inputs, modals)
+├── config/                      # Constants, timing thresholds, environment schemas
+├── features/
+│   ├── calling/                 # Dialer domain
+│   │   ├── components/          # LeadCard.tsx, PostCallDrawer.tsx, AudioDebriefBar.tsx
+│   │   ├── hooks/               # useTelephonyBridge.ts, useCallQueue.ts, useAudioRecorder.ts
+│   │   ├── services/            # callingApi.ts
+│   │   └── callingTypes.ts      # Dispositions, LeadContact interfaces
+│   └── auth/                    # Session management and RBAC rules
+├── storage/                     # SecureStore wrappers
+├── theme/                       # Color constants and design tokens
+└── types/                       # Universal TypeScript declarations
+
+```
+
+## 5. Required Component Specifications
+
+### A. LeadCard (`src/features/calling/components/LeadCard.tsx`)
+
+* Displays prospect name, vertical badge (`Land Sharing`, `Real Estate`, `Interior`, `Construction`), location, and budget.
+
+
+* Displays masked phone number with unselectable text.
+
+
+* Features a full-width, minimum 48px high action button (`Start Masked Call`) with loading and connecting states.
+
+
+
+### B. PostCallDrawer (`src/features/calling/components/PostCallDrawer.tsx`)
+
+* Modal/bottom-sheet that appears automatically when a bridged call completes.
+
+
+* 4-Button Grid for rapid 1-tap outcome logging:
+
+
+1. `BOOK_SITE_VISIT` (Emerald theme)
+
+
+2. `CALLBACK_LATER` (Amber theme)
+
+
+3. `SEND_WHATSAPP_INFO` (Sky theme)
+
+
+4. `NOT_INTERESTED` (Rose theme)
+
+
+
+
+* Audio Memo Bar: Push-to-talk microphone button allowing up to a 15-second audio debrief.
+
+
+* Submission Action: Emits selected disposition and audio memo metadata to trigger downstream WhatsApp/SMS pipelines, then advances to the next contact in the queue.
+
+
+
+## 6. Coding & Implementation Rules for Copilot
+
+* Always write strict TypeScript with clear interfaces (`interface ComponentProps { ... }`).
+
+
+* Use named exports exclusively (`export const ComponentName: React.FC<Props> = ...`).
+
+
+* Do not add extraneous dependencies outside Expo ecosystem libraries (`expo-av`, `expo-secure-store`, NativeWind, `lucide-react-native`, TanStack Query, Zustand).
+
+
+* Preserve dark slate styling conventions (`bg-slate-950`, `bg-slate-900`, `border-slate-800`, `text-slate-400`, `text-white`) across all newly scaffolded components.
+
+
+
+```
+
+---
+
+### How to Trigger Copilot in VS Code or Cursor
+
+After saving `.github/copilot-instructions.md`, open the Copilot Chat panel (`Cmd + Shift + I` or `Ctrl + Alt + I`) and run this prompt[cite: 2]:
+
+```text
+@workspace Read .github/copilot-instructions.md and complete the next implementation step for the calling feature:
+1. Create `src/features/calling/hooks/useTelephonyBridge.ts` using Zustand to manage call states (IDLE, CONNECTING, ACTIVE, DISPOSITION).
+2. Create `src/features/calling/hooks/useCallQueue.ts` to manage a mock queue of 5 masked leads that automatically cycles to the next lead once PostCallDrawer submits.
+3. Wire these hooks into `App.tsx` following our Feature-Sliced Design structure and dark-slate NativeWind styling.
+
+```
