@@ -8,7 +8,7 @@ interface ShiftState {
   lockStatus: ShiftLockStatus;
   lockedUntil: number | null;
   bookSlot: (slotId: string, dateIso: string) => void;
-  cancelBooking: () => void;
+  cancelBooking: (forcePenalty?: boolean) => void;
   clearExpiredLock: () => void;
 }
 
@@ -16,7 +16,7 @@ function getSlotStartTimestamp(slotId: string, dateIso: string): number | null {
   const slot = SHIFT_SLOTS.find((candidate) => candidate.id === slotId);
   if (!slot) return null;
   const date = new Date(`${dateIso}T00:00:00`);
-  date.setHours(slot.startHour, 0, 0, 0);
+  date.setHours(slot.startHour, slot.startMinute ?? 0, 0, 0);
   return date.getTime();
 }
 
@@ -37,7 +37,7 @@ export const useShiftStore = create<ShiftState>((set, get) => ({
     set({ myBooking: { slotId, dateIso, bookedAt: Date.now() } });
   },
 
-  cancelBooking: () => {
+  cancelBooking: (forcePenalty = false) => {
     const { myBooking } = get();
     if (!myBooking) return;
 
@@ -45,7 +45,7 @@ export const useShiftStore = create<ShiftState>((set, get) => ({
     const hoursUntilStart =
       slotStart !== null ? (slotStart - Date.now()) / (1000 * 60 * 60) : Number.POSITIVE_INFINITY;
 
-    if (hoursUntilStart < CANCEL_GRACE_HOURS) {
+    if (forcePenalty || hoursUntilStart < CANCEL_GRACE_HOURS) {
       set({
         myBooking: null,
         lockStatus: 'PENALIZED',

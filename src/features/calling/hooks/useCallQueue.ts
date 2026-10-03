@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 
-import type { LeadContact } from '../callingTypes';
+import type { LeadContact, MessageHistoryItem } from '../callingTypes';
 
 const INITIAL_LEADS: LeadContact[] = [
   {
@@ -74,6 +74,7 @@ export interface UseCallQueueResult {
   advanceToNextLead: () => void;
   addLeadToFront: (lead: LeadContact) => void;
   scheduleCallback: (leadId: string, note: string, scheduledFor: number) => void;
+  recordLeadMessage: (leadId: string, entry: MessageHistoryItem) => void;
 }
 
 export function useCallQueue(): UseCallQueueResult {
@@ -115,6 +116,19 @@ export function useCallQueue(): UseCallQueueResult {
     });
   }, []);
 
+  const recordLeadMessage = useCallback((leadId: string, entry: MessageHistoryItem) => {
+    setQueue((previousQueue) =>
+      previousQueue.map((lead) => {
+        if (lead.id !== leadId) return lead;
+
+        return {
+          ...lead,
+          messageHistory: [...(lead.messageHistory ?? []), entry],
+        };
+      }),
+    );
+  }, []);
+
   return {
     currentLead,
     queueLength: queue.length,
@@ -123,5 +137,6 @@ export function useCallQueue(): UseCallQueueResult {
     advanceToNextLead,
     addLeadToFront,
     scheduleCallback,
+    recordLeadMessage,
   };
 }

@@ -18,6 +18,8 @@ const statusMeta: Record<InventoryStatus, { label: string; color: string; bg: st
   BOOKED: { label: 'BOOKED', color: '#F87171', bg: 'rgba(248,113,113,0.15)' },
 };
 
+const currentAgentHoldIds = new Set(['AZAD-130A', 'AZAD-130B']);
+
 function formatPrice(value: number): string {
   if (value >= 10000000) {
     return `BDT ${(value / 10000000).toFixed(2)} Cr`;
@@ -40,6 +42,34 @@ function getProjectStatusColor(status: InventoryStatus, colors: ReturnType<typeo
   if (status === 'AVAILABLE') return colors.success;
   if (status === 'LOCKED') return colors.warning;
   return colors.danger;
+}
+
+function getTypeBadgeMeta(type: string) {
+  const normalized = type.toLowerCase();
+  if (normalized.includes('1600') || normalized.includes('1,600')) {
+    return {
+      label: 'Type B',
+      accent: '#06B6D4',
+      background: 'rgba(6, 182, 212, 0.15)',
+      border: '#67E8F9',
+    };
+  }
+
+  if (normalized.includes('1900') || normalized.includes('1,900')) {
+    return {
+      label: 'Type C',
+      accent: '#818CF8',
+      background: 'rgba(129, 140, 248, 0.15)',
+      border: '#A5B4FC',
+    };
+  }
+
+  return {
+    label: 'Type A',
+    accent: '#A2A8B5',
+    background: 'rgba(162,168,181,0.12)',
+    border: '#D1D5DB',
+  };
 }
 
 export function StackingMatrixScreen() {
@@ -80,21 +110,6 @@ export function StackingMatrixScreen() {
     setSelectedUnit(null);
   };
 
-  const handleStatusUpdate = (projectId: string, unitId: string, nextStatus: InventoryStatus) => {
-    setProjects((current) =>
-      current.map((project) =>
-        project.id === projectId
-          ? {
-              ...project,
-              units: project.units.map((unit) =>
-                unit.id === unitId ? { ...unit, status: nextStatus } : unit,
-              ),
-            }
-          : project,
-      ),
-    );
-  };
-
   const renderStatusBadge = (status: InventoryStatus) => {
     const meta = statusMeta[status];
     return (
@@ -105,7 +120,10 @@ export function StackingMatrixScreen() {
   };
 
   const renderUnitCard = (unit: InventoryUnit, projectId: string, compact: boolean) => {
+    const typeMeta = getTypeBadgeMeta(unit.type);
     const isCompact = compact || unit.code.length > 4;
+    const isCurrentAgentHold = currentAgentHoldIds.has(unit.id);
+
     return (
       <Pressable
         key={unit.id}
@@ -127,7 +145,27 @@ export function StackingMatrixScreen() {
         }}
       >
         <View style={{ position: 'absolute', right: 5, top: 5, width: 7, height: 7, borderRadius: 999, backgroundColor: getProjectStatusColor(unit.status, colors) }} />
-        <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textPrimary }}>{unit.code}</Text>
+        <View
+          style={{
+            position: 'absolute',
+            left: 4,
+            top: 4,
+            borderRadius: 6,
+            borderWidth: 1,
+            borderColor: typeMeta.border,
+            backgroundColor: typeMeta.background,
+            paddingHorizontal: 4,
+            paddingVertical: 2,
+          }}
+        >
+          <Text style={{ fontSize: 7, fontWeight: '800', color: typeMeta.accent }}>{typeMeta.label}</Text>
+        </View>
+        <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textPrimary, marginTop: 10 }}>{unit.code}</Text>
+        {unit.status === 'LOCKED' && (
+          <Text style={{ marginTop: 3, fontSize: 7, fontWeight: '700', color: isCurrentAgentHold ? colors.warning : colors.textSecondary }}>
+            {isCurrentAgentHold ? '02:14:08' : 'Locked'}
+          </Text>
+        )}
       </Pressable>
     );
   };
@@ -302,11 +340,31 @@ export function StackingMatrixScreen() {
           <Pressable onPress={() => setSelectedUnit(null)} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(15, 23, 42, 0.5)' }}>
             <Pressable onPress={() => undefined} style={{ borderTopLeftRadius: 24, borderTopRightRadius: 24, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border, padding: 20 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <View>
+                <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 20, fontWeight: '800', color: colors.textPrimary }}>{selectedUnit.code}</Text>
                   <Text style={{ marginTop: 4, fontSize: 12, color: colors.textSecondary }}>{selectedUnit.type}</Text>
                 </View>
                 {renderStatusBadge(selectedUnit.status)}
+              </View>
+
+              <View style={{ marginTop: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View
+                  style={{
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    borderColor: getTypeBadgeMeta(selectedUnit.type).border,
+                    backgroundColor: getTypeBadgeMeta(selectedUnit.type).background,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                  }}
+                >
+                  <Text style={{ fontSize: 10, fontWeight: '800', color: getTypeBadgeMeta(selectedUnit.type).accent }}>
+                    {getTypeBadgeMeta(selectedUnit.type).label}
+                  </Text>
+                </View>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, fontWeight: '700' }}>
+                  {selectedUnit.status === 'LOCKED' && currentAgentHoldIds.has(selectedUnit.id) ? '72h hold countdown active' : 'Locked by another agent'}
+                </Text>
               </View>
 
               <View style={{ marginTop: 16, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, padding: 14 }}>
@@ -337,7 +395,9 @@ export function StackingMatrixScreen() {
                 <View style={{ marginTop: 18 }}>
                   <Text style={{ fontSize: 14, color: colors.textSecondary }}>
                     {selectedUnit.status === 'LOCKED'
-                      ? 'This unit is currently on a 72-hour hold and is not available for direct booking.'
+                      ? currentAgentHoldIds.has(selectedUnit.id)
+                        ? 'Only your active hold shows a countdown timer. Other tracked holds remain generic and hidden from client detail views.'
+                        : 'This unit is currently locked by another agent. Client details remain hidden for privacy and compliance.'
                       : 'This unit is already booked and is unavailable for new holds.'}
                   </Text>
                   <Pressable onPress={() => setSelectedUnit(null)} style={{ marginTop: 18, minHeight: 48, borderRadius: 12, backgroundColor: colors.subpanel, alignItems: 'center', justifyContent: 'center' }}>

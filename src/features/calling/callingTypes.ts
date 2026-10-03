@@ -18,6 +18,13 @@ export interface CallbackNote {
   loggedAt: number;
 }
 
+export interface MessageHistoryItem {
+  id: string;
+  channel: 'sms' | 'whatsapp';
+  message: string;
+  sentAt: number;
+}
+
 export interface LeadContact {
   id: string;
   name: string;
@@ -25,6 +32,7 @@ export interface LeadContact {
   location: string;
   budget: string;
   maskedPhoneNumber: string;
+  messageHistory?: MessageHistoryItem[];
   /**
    * Only populated for leads the agent typed in themselves (Add Custom Lead).
    * Investor-database leads must never carry a dialable raw number here —

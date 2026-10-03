@@ -13,20 +13,23 @@ import {
 } from 'lucide-react-native';
 
 import { useAppTheme } from '../../../theme/ThemeContext';
-import type { LeadContact } from '../callingTypes';
+import type { LeadContact, MessageHistoryItem } from '../callingTypes';
 import { VERTICAL_BADGE_STYLES } from '../constants/verticalOptions';
 import { PROJECT_SPEC_CATALOG } from '../constants/mockProjectCatalog';
+import { MessageComposerModal } from './MessageComposerModal';
 
 interface LeadCardProps {
   lead: LeadContact;
   isConnecting: boolean;
   onStartCall: () => void;
+  onRecordMessage?: (entry: MessageHistoryItem) => void;
 }
 
-export const LeadCard: React.FC<LeadCardProps> = ({ lead, isConnecting, onStartCall }) => {
+export const LeadCard: React.FC<LeadCardProps> = ({ lead, isConnecting, onStartCall, onRecordMessage }) => {
   const { colors } = useAppTheme();
   const [isPitchExpanded, setIsPitchExpanded] = useState(false);
   const [isSpecExpanded, setIsSpecExpanded] = useState(false);
+  const [isMessageComposerVisible, setIsMessageComposerVisible] = useState(false);
   const badgeStyle = VERTICAL_BADGE_STYLES[lead.vertical];
   const hasPitchContent = Boolean(lead.quickPitchScript || lead.objectionPointers?.length);
   const projectSpec = lead.projectSpecId ? PROJECT_SPEC_CATALOG[lead.projectSpecId] : undefined;
@@ -149,7 +152,22 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, isConnecting, onStartC
         </View>
       )}
 
-      <Pressable onPress={onStartCall} disabled={isConnecting} style={{ marginTop: 20, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: isConnecting ? colors.accent : colors.accent }}>
+      <View style={{ marginTop: 20, flexDirection: 'row', gap: 8 }}>
+        <Pressable
+          onPress={() => setIsMessageComposerVisible(true)}
+          style={{ flex: 1, minHeight: 48, borderRadius: 12, backgroundColor: '#38BDF8', alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }}
+        >
+          <Text style={{ fontSize: 15, fontWeight: '800', color: '#FFFFFF' }}>💬 SMS</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setIsMessageComposerVisible(true)}
+          style={{ flex: 1, minHeight: 48, borderRadius: 12, backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }}
+        >
+          <Text style={{ fontSize: 15, fontWeight: '800', color: '#FFFFFF' }}>🟢 WhatsApp</Text>
+        </Pressable>
+      </View>
+
+      <Pressable onPress={onStartCall} disabled={isConnecting} style={{ marginTop: 12, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: isConnecting ? colors.accent : colors.accent }}>
         {isConnecting ? (
           <>
             <ActivityIndicator color="#F7F3EE" />
@@ -162,6 +180,22 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, isConnecting, onStartC
           </>
         )}
       </Pressable>
+
+      <MessageComposerModal
+        visible={isMessageComposerVisible}
+        lead={{
+          id: lead.id,
+          name: lead.name,
+          maskedPhoneNumber: lead.maskedPhoneNumber,
+          rawPhoneNumber: lead.rawPhoneNumber,
+          messageHistory: lead.messageHistory ?? [],
+        }}
+        onClose={() => setIsMessageComposerVisible(false)}
+        onSendMessage={(entry) => {
+          onRecordMessage?.(entry);
+          setIsMessageComposerVisible(false);
+        }}
+      />
     </View>
   );
 };

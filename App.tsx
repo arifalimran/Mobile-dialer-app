@@ -28,7 +28,7 @@ import { AgentRegistrationScreen } from './src/features/auth/screens/AgentRegist
 import { ApplicationUnderReviewScreen } from './src/features/auth/screens/ApplicationUnderReviewScreen';
 
 import { useShiftStore } from './src/features/shifts/hooks/useShiftStore';
-import { ShiftBookingScreen } from './src/features/shifts/screens/ShiftBookingScreen';
+import { ShiftsScreen } from './src/features/shifts/screens/ShiftsScreen';
 
 import { KpiEvaluationScreen } from './src/features/kpi/screens/KpiEvaluationScreen';
 import { UPCOMING_KPI_REVISIONS } from './src/features/kpi/constants/kpiBenchmarks';
@@ -69,9 +69,10 @@ function DialerScreen({
     advanceToNextLead,
     addLeadToFront,
     scheduleCallback,
+    recordLeadMessage,
   } = useCallQueue();
   const { colors } = useAppTheme();
-  const { status, startCall, endCall, reset } = useTelephonyBridge();
+  const { status, startCall, endCall, reset, activeLeadName, activePhone, callDurationSeconds } = useTelephonyBridge();
   const { agentPhone, callProviderMode } = useAgentConfig();
 
   const isConnecting = status === 'CONNECTING';
@@ -85,6 +86,8 @@ function DialerScreen({
       leadId: currentLead.id,
       mode: callProviderMode,
       rawPhoneNumber: currentLead.rawPhoneNumber,
+      leadName: currentLead.name,
+      maskedPhoneNumber: currentLead.maskedPhoneNumber,
     });
   };
 
@@ -123,6 +126,7 @@ function DialerScreen({
               lead={currentLead}
               isConnecting={isConnecting}
               onStartCall={handleStartCall}
+              onRecordMessage={(entry) => recordLeadMessage(currentLead.id, entry)}
             />
           ) : (
             <View style={{ borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 24 }}>
@@ -174,6 +178,7 @@ function DialerScreen({
  */
 function AppShell({ onLogout }: { onLogout: () => void }) {
   const { colors, theme } = useAppTheme();
+  const telephonyState = useTelephonyBridge();
   const agentProfile = useAuthStore((state) => state.agentProfile);
   const role = useAuthStore((state) => state.role);
   const lockStatus = useShiftStore((state) => state.lockStatus);
@@ -191,6 +196,13 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
   const [bridgeLead, setBridgeLead] = useState<{ id: string; leadName: string; phone: string } | null>(null);
 
   const isShiftLocked = lockStatus === 'PENALIZED' && !!lockedUntil && Date.now() < lockedUntil;
+  const isActiveCall = telephonyState.status === 'ACTIVE';
+
+  const formatCallDuration = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const remainingSeconds = (seconds % 60).toString().padStart(2, '0');
+    return `${minutes}:${remainingSeconds}`;
+  };
   const shiftStatus: ShiftStatus = isShiftLocked ? 'LOCKED' : isOnShift ? 'ON_DUTY' : 'BREAK';
 
   return (
@@ -202,6 +214,32 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
         onOpenBulletins={() => setCurrentScreen('BULLETINS')}
         onOpenStatusSheet={() => setIsStatusSheetOpen(true)}
       />
+
+      {isActiveCall && (
+        <View style={{ position: 'absolute', left: 12, right: 12, bottom: 88, zIndex: 20 }}>
+          <View style={{ borderRadius: 18, borderWidth: 1, borderColor: '#F87171', backgroundColor: 'rgba(15,23,42,0.92)', padding: 14, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: '#F8FAFC' }}>{telephonyState.activeLeadName ?? 'Active Lead'}</Text>
+                <Text selectable={false} style={{ marginTop: 4, fontSize: 12, color: '#CBD5E1', fontFamily: 'monospace' }}>
+                  {telephonyState.activePhone ?? '+880 1819-***-34'}
+                </Text>
+              </View>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: '#FCA5A5' }}>{formatCallDuration(telephonyState.callDurationSeconds)}</Text>
+            </View>
+
+            <Pressable
+              onPress={() => {
+                telephonyState.endCall();
+                setCurrentScreen('DIALER');
+              }}
+              style={{ marginTop: 12, minHeight: 48, borderRadius: 12, backgroundColor: '#F43F5E', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Text style={{ fontSize: 15, fontWeight: '800', color: '#FFFFFF' }}>End Call</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
 
       <View style={{ flex: 1, backgroundColor: colors.canvas }}>
         {currentScreen === 'DIALER' && (
@@ -215,7 +253,7 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
         )}
         {currentScreen === 'BULLETINS' && <BulletinsScreen />}
         {currentScreen === 'KPI' && <KpiEvaluationScreen />}
-        {currentScreen === 'SHIFTS' && <ShiftBookingScreen />}
+        {currentScreen === 'SHIFTS' && <ShiftsScreen />}
         {currentScreen === 'CALLBACKS' && (
           <ScheduledCallbacksScreen
             onBridgeCall={(lead) => {
@@ -260,6 +298,10 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
         onSave={(nextAgentPhone, nextMode) => {
           setAgentPhone(nextAgentPhone);
           setCallProviderMode(nextMode);
+        }}
+        onNavigateWallet={() => {
+          setIsSettingsVisible(false);
+          setCurrentScreen('WALLET');
         }}
       />
 

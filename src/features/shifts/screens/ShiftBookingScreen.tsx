@@ -68,10 +68,10 @@ export const ShiftBookingScreen: React.FC = () => {
             {SHIFT_SLOTS.find((slot) => slot.id === myBooking.slotId)?.label ?? myBooking.slotId}
           </Text>
           <Text style={{ marginTop: 6, fontSize: 11, color: colors.success }}>
-            Cancelling less than {6} hours before start applies a 7-day penalty.
+            Cancelling within 48 hours before start applies a 7-day penalty.
           </Text>
           <Pressable
-            onPress={cancelBooking}
+            onPress={() => cancelBooking()}
             style={{ marginTop: 12, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.success, backgroundColor: colors.card }}
           >
             <Text style={{ fontSize: 14, fontWeight: '700', color: colors.success }}>Cancel Booking</Text>
