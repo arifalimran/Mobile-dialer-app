@@ -1,25 +1,25 @@
 import React from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Bell, CalendarClock, Clock, Phone, Warehouse, Wallet } from 'lucide-react-native';
+import { CalendarClock, Clock, Home, Phone, Warehouse, Wallet } from 'lucide-react-native';
 
 import { useAppTheme } from '../../theme/ThemeContext';
-import type { AppScreen } from '../../types/navigation';
-
-type BottomTabScreen = 'DIALER' | 'CALLBACKS' | 'INVENTORY' | 'WALLET' | 'BULLETINS' | 'SHIFTS';
+import { useAuthStore } from '../../features/auth/hooks/useAuthStore';
+import { getEmployeeRoleProfile } from '../../features/auth/constants/employeeProfiles';
+import type { AppScreen, BottomNavScreen } from '../../types/navigation';
 
 interface TabDefinition {
-  screen: BottomTabScreen;
+  screen: BottomNavScreen;
   label: string;
   Icon: typeof Phone;
 }
 
 const TABS: TabDefinition[] = [
+  { screen: 'DASHBOARD', label: 'Dashboard', Icon: Home },
   { screen: 'DIALER', label: 'Dialer', Icon: Phone },
   { screen: 'CALLBACKS', label: 'Callbacks', Icon: Clock },
   { screen: 'INVENTORY', label: 'Inventory', Icon: Warehouse },
   { screen: 'WALLET', label: 'Wallet', Icon: Wallet },
-  { screen: 'BULLETINS', label: 'Bulletins', Icon: Bell },
   { screen: 'SHIFTS', label: 'Shifts', Icon: CalendarClock },
 ];
 
@@ -30,12 +30,24 @@ interface BottomTabBarProps {
 
 /**
  * Module 1: fixed 64px bottom tab bar covering the 4 primary daily-workflow
- * destinations. Everything else (Bulletins, KPI, Site Visits, Add Lead,
+ * destinations. Everything else (KPI, Site Visits, Add Lead,
  * Settings, Logout) lives behind the header's bell icon / avatar sheet.
  */
 export const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeScreen, onNavigate }) => {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
+  const role = useAuthStore((state) => state.role);
+  const featureFlags = useAuthStore((state) => state.featureFlags);
+  const visibleTabs = getEmployeeRoleProfile(role).visibleTabs;
+  const tabs = TABS.filter((tab) => {
+    if (!visibleTabs.includes(tab.screen)) return false;
+    if (tab.screen === 'DIALER') return featureFlags.canUseDialer;
+    if (tab.screen === 'CALLBACKS') return featureFlags.canUseCallbacks;
+    if (tab.screen === 'INVENTORY') return featureFlags.canUseInventory;
+    if (tab.screen === 'WALLET') return featureFlags.canUseWallet;
+    if (tab.screen === 'SHIFTS') return featureFlags.canUseShifts;
+    return true;
+  });
 
   return (
     <View
@@ -47,7 +59,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeScreen, onNavi
         paddingBottom: Math.max(insets.bottom, Platform.OS === 'ios' ? 8 : 0),
       }}
     >
-      {TABS.map(({ screen, label, Icon }) => {
+      {tabs.map(({ screen, label, Icon }) => {
         const isActive = activeScreen === screen;
         return (
           <Pressable

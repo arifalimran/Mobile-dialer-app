@@ -1,12 +1,16 @@
 import { create } from 'zustand';
-import type { AgentProfile, AgentRole } from '../authTypes';
+import { EMPLOYEE_ROLE_PROFILES, getEmployeeRoleProfile } from '../constants/employeeProfiles';
+import type { AgentProfile, AgentRole, EmployeeFeatureFlags, EmployeeStatus } from '../authTypes';
 
 interface AuthState {
   isAuthenticated: boolean;
   role: AgentRole;
+  featureFlags: EmployeeFeatureFlags;
+  employeeStatus: EmployeeStatus;
   agentProfile: AgentProfile | null;
   loginAt: number | null;
   setRole: (role: AgentRole) => void;
+  switchRole: (role: AgentRole) => void;
   submitRegistration: (profile: Omit<AgentProfile, 'kycStatus' | 'submittedAt'>) => void;
   /** Mock Corporate Phone/ID + PIN check — accepts any non-empty pair (no backend yet). */
   login: (identifier: string, pin: string) => boolean;
@@ -21,17 +25,18 @@ interface AuthState {
 }
 
 function buildMockProfile(identifier: string): AgentProfile {
-  const normalized = identifier.trim();
   const now = Date.now();
+  const defaultRole: AgentRole = 'FULL_TIME_SALES';
+  const profile = EMPLOYEE_ROLE_PROFILES[defaultRole];
   return {
-    legalName: 'Demo Agent',
+    legalName: 'Imran Nahar',
     nidNumber: '0000000000',
     dateOfBirth: '1995-01-01',
     gender: 'Other',
     occupation: 'Freelancer',
     workPreference: 'FULL_TIME',
-    phone: normalized,
-    email: 'demo.agent@spacemaker.local',
+    phone: identifier.trim(),
+    email: 'imran.nahar@spacemaker.local',
     permanentAddress: {
       division: 'Dhaka',
       district: 'Dhaka',
@@ -49,8 +54,10 @@ function buildMockProfile(identifier: string): AgentProfile {
       contactPhone: '01700000000',
       fullAddress: 'Dhaka',
     },
-    role: 'MICRO_CALLER',
-    corporateSim: normalized,
+    role: defaultRole,
+    employeeStatus: profile.defaultStatus,
+    corporateSim: '+880 1711-***-88',
+    sessionId: '#SES-8831',
     kycStatus: 'VERIFIED',
     submittedAt: now,
   };
@@ -67,10 +74,41 @@ function buildMockProfile(identifier: string): AgentProfile {
  */
 export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
-  role: 'MICRO_CALLER',
+  role: 'FULL_TIME_SALES',
+  featureFlags: EMPLOYEE_ROLE_PROFILES.FULL_TIME_SALES.featureFlags,
+  employeeStatus: EMPLOYEE_ROLE_PROFILES.FULL_TIME_SALES.defaultStatus,
   agentProfile: null,
   loginAt: null,
-  setRole: (role) => set({ role }),
+  setRole: (role) => {
+    const profile = getEmployeeRoleProfile(role);
+    set((state) => ({
+      role,
+      featureFlags: profile.featureFlags,
+      employeeStatus: profile.defaultStatus,
+      agentProfile: state.agentProfile
+        ? {
+            ...state.agentProfile,
+            role,
+            employeeStatus: profile.defaultStatus,
+          }
+        : state.agentProfile,
+    }));
+  },
+  switchRole: (role) => {
+    const profile = getEmployeeRoleProfile(role);
+    set((state) => ({
+      role,
+      featureFlags: profile.featureFlags,
+      employeeStatus: profile.defaultStatus,
+      agentProfile: state.agentProfile
+        ? {
+            ...state.agentProfile,
+            role,
+            employeeStatus: profile.defaultStatus,
+          }
+        : state.agentProfile,
+    }));
+  },
   submitRegistration: (profile) =>
     set({
       isAuthenticated: false,
@@ -81,6 +119,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         submittedAt: Date.now(),
       },
       role: profile.role,
+      featureFlags: getEmployeeRoleProfile(profile.role).featureFlags,
+      employeeStatus: getEmployeeRoleProfile(profile.role).defaultStatus,
     }),
   login: (identifier, pin) => {
     const normalizedIdentifier = (identifier ?? '').trim();
@@ -106,10 +146,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
 
     const nextProfile = buildMockProfile(normalizedIdentifier);
+    const nextRoleProfile = getEmployeeRoleProfile(nextProfile.role);
     set({
       isAuthenticated: true,
       loginAt: Date.now(),
       role: nextProfile.role,
+      featureFlags: nextRoleProfile.featureFlags,
+      employeeStatus: nextRoleProfile.defaultStatus,
       agentProfile: {
         ...nextProfile,
         kycStatus: 'VERIFIED',
@@ -121,7 +164,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({
       isAuthenticated: false,
       loginAt: null,
-      role: 'MICRO_CALLER',
+      role: 'FULL_TIME_SALES',
+      featureFlags: EMPLOYEE_ROLE_PROFILES.FULL_TIME_SALES.featureFlags,
+      employeeStatus: EMPLOYEE_ROLE_PROFILES.FULL_TIME_SALES.defaultStatus,
       agentProfile: null,
     }),
   verifyKyc: () =>

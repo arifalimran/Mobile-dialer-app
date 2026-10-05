@@ -16,6 +16,7 @@ import { useAppTheme } from '../../../theme/ThemeContext';
 import type { LeadContact, MessageHistoryItem } from '../callingTypes';
 import { VERTICAL_BADGE_STYLES } from '../constants/verticalOptions';
 import { PROJECT_SPEC_CATALOG } from '../constants/mockProjectCatalog';
+import { getLeadPriorityMeta } from '../utils/leadPriority';
 import { MessageComposerModal } from './MessageComposerModal';
 
 interface LeadCardProps {
@@ -33,6 +34,8 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, isConnecting, onStartC
   const badgeStyle = VERTICAL_BADGE_STYLES[lead.vertical];
   const hasPitchContent = Boolean(lead.quickPitchScript || lead.objectionPointers?.length);
   const projectSpec = lead.projectSpecId ? PROJECT_SPEC_CATALOG[lead.projectSpecId] : undefined;
+  const priorityMeta = getLeadPriorityMeta(lead.source);
+  const stars = '★'.repeat(priorityMeta.stars);
 
   return (
     <View style={{ borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 20 }}>
@@ -42,6 +45,15 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, isConnecting, onStartC
         </Text>
         <View style={{ flexShrink: 0, borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, paddingHorizontal: 10, paddingVertical: 6 }}>
           <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textPrimary }}>{lead.vertical}</Text>
+        </View>
+      </View>
+
+      <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <View style={{ borderRadius: 999, borderWidth: 1, borderColor: priorityMeta.accent, backgroundColor: priorityMeta.background, paddingHorizontal: 10, paddingVertical: 6 }}>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: priorityMeta.accent }}>{stars} {priorityMeta.label}</Text>
+        </View>
+        <View style={{ borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, paddingHorizontal: 10, paddingVertical: 6 }}>
+          <Text style={{ fontSize: 10, fontWeight: '700', color: badgeStyle.text === 'text-sky-400' ? colors.accent : colors.textSecondary }}>{lead.source}</Text>
         </View>
       </View>
 
@@ -76,6 +88,17 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, isConnecting, onStartC
             </Text>
           </View>
           <Text style={{ marginTop: 8, fontSize: 14, color: colors.textPrimary }}>{lead.lastCallbackNote.note}</Text>
+        </View>
+      )}
+
+      {(lead.customerType || lead.companyName || lead.designation) && (
+        <View style={{ marginTop: 14, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, padding: 12 }}>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSecondary }}>CUSTOMER PROFILE</Text>
+          <Text style={{ marginTop: 6, fontSize: 13, color: colors.textPrimary }}>
+            {lead.customerType ?? 'Individual'}
+            {lead.designation ? ` • ${lead.designation}` : ''}
+          </Text>
+          {lead.companyName && <Text style={{ marginTop: 4, fontSize: 12, color: colors.textSecondary }}>{lead.companyName}</Text>}
         </View>
       )}
 
@@ -155,31 +178,24 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, isConnecting, onStartC
       <View style={{ marginTop: 20, flexDirection: 'row', gap: 8 }}>
         <Pressable
           onPress={() => setIsMessageComposerVisible(true)}
-          style={{ flex: 1, minHeight: 48, borderRadius: 12, backgroundColor: '#38BDF8', alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }}
+          style={{ flex: 1, minHeight: 46, borderRadius: 12, backgroundColor: '#334155', alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }}
         >
-          <Text style={{ fontSize: 15, fontWeight: '800', color: '#FFFFFF' }}>💬 SMS</Text>
+          <Text style={{ fontSize: 14, fontWeight: '800', color: '#E2E8F0' }}>Messages</Text>
         </Pressable>
-        <Pressable
-          onPress={() => setIsMessageComposerVisible(true)}
-          style={{ flex: 1, minHeight: 48, borderRadius: 12, backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }}
-        >
-          <Text style={{ fontSize: 15, fontWeight: '800', color: '#FFFFFF' }}>🟢 WhatsApp</Text>
-        </Pressable>
-      </View>
-
-      <Pressable onPress={onStartCall} disabled={isConnecting} style={{ marginTop: 12, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: isConnecting ? colors.accent : colors.accent }}>
+        <Pressable onPress={onStartCall} disabled={isConnecting} style={{ flex: 1, minHeight: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: colors.accent }}>
         {isConnecting ? (
           <>
             <ActivityIndicator color="#F7F3EE" />
-            <Text style={{ marginLeft: 8, fontSize: 15, fontWeight: '700', color: '#F7F3EE' }}>Connecting…</Text>
+            <Text style={{ marginLeft: 8, fontSize: 14, fontWeight: '700', color: '#F7F3EE' }}>Dialing…</Text>
           </>
         ) : (
           <>
-            <Phone size={20} color="#F7F3EE" />
-            <Text style={{ marginLeft: 8, fontSize: 15, fontWeight: '700', color: '#F7F3EE' }}>Start Masked Call</Text>
+            <Phone size={18} color="#F7F3EE" />
+            <Text style={{ marginLeft: 8, fontSize: 14, fontWeight: '700', color: '#F7F3EE' }}>Dial Client</Text>
           </>
         )}
-      </Pressable>
+        </Pressable>
+      </View>
 
       <MessageComposerModal
         visible={isMessageComposerVisible}

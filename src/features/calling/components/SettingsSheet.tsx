@@ -5,6 +5,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   Text,
   TextInput,
   TouchableWithoutFeedback,
@@ -12,7 +13,12 @@ import {
 } from 'react-native';
 import { X } from 'lucide-react-native';
 
+import { SelectModal } from '../../../components/SelectModal';
 import { useAppTheme } from '../../../theme/ThemeContext';
+import { useAuthStore } from '../../auth/hooks/useAuthStore';
+import { EMPLOYEE_ROLE_ORDER, getEmployeeRoleProfile } from '../../auth/constants/employeeProfiles';
+import { MOCK_BULLETINS } from '../../notices/constants/mockBulletins';
+import { useNoticeStore } from '../../notices/hooks/useNoticeStore';
 import { MONTHLY_SALARY_GATE_METRICS } from '../../wallet/utils/kpiEngine';
 import type { CallProviderMode } from '../callingTypes';
 
@@ -23,6 +29,7 @@ interface SettingsSheetProps {
   onClose: () => void;
   onSave: (agentPhone: string, callProviderMode: CallProviderMode) => void;
   onNavigateWallet: () => void;
+  onSignOut: () => void;
 }
 
 export const SettingsSheet: React.FC<SettingsSheetProps> = ({
@@ -32,17 +39,28 @@ export const SettingsSheet: React.FC<SettingsSheetProps> = ({
   onClose,
   onSave,
   onNavigateWallet,
+  onSignOut,
 }) => {
   const { colors } = useAppTheme();
   const [draftPhone, setDraftPhone] = useState(agentPhone);
   const [draftMode, setDraftMode] = useState<CallProviderMode>(callProviderMode);
   const [isGuidelinesVisible, setIsGuidelinesVisible] = useState(false);
+  const [isBulletinsVisible, setIsBulletinsVisible] = useState(false);
+  const [isRoleModalVisible, setIsRoleModalVisible] = useState(false);
+  const acknowledgedIds = useNoticeStore((state) => state.acknowledgedIds);
+  const acknowledge = useNoticeStore((state) => state.acknowledge);
+  const role = useAuthStore((state) => state.role);
+  const switchRole = useAuthStore((state) => state.switchRole);
+  const agentProfile = useAuthStore((state) => state.agentProfile);
+  const roleLabel = getEmployeeRoleProfile(role).label;
 
   useEffect(() => {
     if (visible) {
       setDraftPhone(agentPhone);
       setDraftMode(callProviderMode);
       setIsGuidelinesVisible(false);
+      setIsBulletinsVisible(false);
+      setIsRoleModalVisible(false);
     }
   }, [visible, agentPhone, callProviderMode]);
 
@@ -88,14 +106,31 @@ export const SettingsSheet: React.FC<SettingsSheetProps> = ({
                 style={{ marginTop: 8, minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, paddingHorizontal: 16, fontSize: 16, color: colors.textPrimary }}
               />
 
+              <View style={{ marginTop: 18, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, padding: 12 }}>
+                <Text style={{ fontSize: 11, fontWeight: '800', letterSpacing: 0.8, color: colors.textSecondary }}>ACTIVE PROFILE DOSSIER</Text>
+                <Text style={{ marginTop: 7, fontSize: 13, color: colors.textPrimary }}>Agent: {agentProfile?.legalName ?? 'Imran Nahar'}</Text>
+                <Text style={{ marginTop: 4, fontSize: 12, color: colors.textSecondary }}>Status: {agentProfile?.employeeStatus ?? 'PROBATION'} • Role: {roleLabel}</Text>
+                <Text style={{ marginTop: 4, fontSize: 12, color: colors.textSecondary }}>Corporate SIM: {agentProfile?.corporateSim ?? 'Unassigned'}</Text>
+                <Text style={{ marginTop: 4, fontSize: 12, color: colors.textSecondary }}>Session: {agentProfile?.sessionId ?? '#SES-8831'}</Text>
+              </View>
+
+              <Text style={{ marginTop: 20, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, color: colors.textSecondary }}>ROLE SWITCHER (MOCK SANDBOX)</Text>
+              <Pressable
+                onPress={() => setIsRoleModalVisible(true)}
+                style={{ marginTop: 8, minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+              >
+                <Text style={{ fontSize: 15, color: colors.textPrimary }}>{roleLabel}</Text>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: colors.accent }}>Switch</Text>
+              </Pressable>
+
               <Text style={{ marginTop: 20, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, color: colors.textSecondary }}>CALLING PROVIDER</Text>
               <View style={{ marginTop: 8, flexDirection: 'row', gap: 12 }}>
                 <Pressable
-                  onPress={() => setDraftMode('NATIVE_SIM')}
-                  style={{ minHeight: 48, flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: draftMode === 'NATIVE_SIM' ? colors.accent : colors.border, backgroundColor: draftMode === 'NATIVE_SIM' ? colors.subpanel : colors.card }}
+                  onPress={() => setDraftMode('DIRECT_NATIVE_DIALER')}
+                  style={{ minHeight: 48, flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: draftMode === 'DIRECT_NATIVE_DIALER' ? colors.accent : colors.border, backgroundColor: draftMode === 'DIRECT_NATIVE_DIALER' ? colors.subpanel : colors.card }}
                 >
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: draftMode === 'NATIVE_SIM' ? colors.accent : colors.textSecondary }}>
-                    Native SIM
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: draftMode === 'DIRECT_NATIVE_DIALER' ? colors.accent : colors.textSecondary }}>
+                    Direct Native Dialer
                   </Text>
                 </Pressable>
                 <Pressable
@@ -108,16 +143,26 @@ export const SettingsSheet: React.FC<SettingsSheetProps> = ({
                 </Pressable>
               </View>
               <Text style={{ marginTop: 8, fontSize: 12, color: colors.textSecondary }}>
-                Native SIM opens your phone&apos;s own dialer (masked leads cannot be dialed this way). IPTSP Bridge simulates the masked cloud PBX call.
+                Direct Native Dialer opens the device dialer and returns to the app for disposition logging. IPTSP Bridge keeps the call inside the masked PBX flow.
               </Text>
 
               <Pressable
-                onPress={() => setIsGuidelinesVisible(true)}
+                onPress={() => setIsBulletinsVisible(true)}
                 style={{ marginTop: 20, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, padding: 14 }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textPrimary }}>Company Bulletins &amp; Compliance Notices</Text>
+                <Text style={{ marginTop: 6, fontSize: 12, color: colors.textSecondary }}>
+                  Review head-office announcements, unread notices, and acknowledge compliance updates.
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => setIsGuidelinesVisible(true)}
+                style={{ marginTop: 12, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, padding: 14 }}
               >
                 <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textPrimary }}>Monthly KPI &amp; Compensation Guidelines</Text>
                 <Text style={{ marginTop: 6, fontSize: 12, color: colors.textSecondary }}>
-                  Review the full 8-point gate, payout unlock rules, and live wallet status.
+                  Review the weighted gate, payout unlock rules, and live wallet status.
                 </Text>
               </Pressable>
 
@@ -126,6 +171,16 @@ export const SettingsSheet: React.FC<SettingsSheetProps> = ({
                 style={{ marginTop: 24, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: colors.accent }}
               >
                 <Text style={{ fontSize: 16, fontWeight: '700', color: '#FFFFFF' }}>Save Settings</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => {
+                  onClose();
+                  onSignOut();
+                }}
+                style={{ marginTop: 10, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.danger, backgroundColor: 'rgba(244,63,94,0.12)' }}
+              >
+                <Text style={{ fontSize: 15, fontWeight: '800', color: colors.danger }}>Sign Out / Clock Out</Text>
               </Pressable>
             </View>
           </TouchableWithoutFeedback>
@@ -136,7 +191,7 @@ export const SettingsSheet: React.FC<SettingsSheetProps> = ({
         <View style={{ flex: 1, justifyContent: 'center', backgroundColor: 'rgba(15, 23, 42, 0.68)', padding: 20 }}>
           <View style={{ borderRadius: 22, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, padding: 20 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>Monthly Salary Gate</Text>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>Monthly Compensation Gate</Text>
               <Pressable onPress={() => setIsGuidelinesVisible(false)} style={{ padding: 6 }}>
                 <X size={18} color={colors.textPrimary} />
               </Pressable>
@@ -149,7 +204,7 @@ export const SettingsSheet: React.FC<SettingsSheetProps> = ({
                     <Text style={{ fontSize: 10, fontWeight: '900', color: '#0F172A' }}>✓</Text>
                   </View>
                   <Text style={{ flex: 1, fontSize: 12, color: colors.textSecondary }}>{metric.label}</Text>
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textPrimary }}>{metric.target}{metric.suffix}</Text>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textPrimary }}>{metric.weight}% weight</Text>
                 </View>
               ))}
             </View>
@@ -166,6 +221,67 @@ export const SettingsSheet: React.FC<SettingsSheetProps> = ({
           </View>
         </View>
       </Modal>
+
+      <Modal visible={isBulletinsVisible} transparent animationType="slide" onRequestClose={() => setIsBulletinsVisible(false)}>
+        <View style={{ flex: 1, justifyContent: 'center', backgroundColor: 'rgba(15, 23, 42, 0.68)', padding: 20 }}>
+          <View style={{ maxHeight: '84%', borderRadius: 22, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, padding: 20 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>Company Bulletins</Text>
+              <Pressable onPress={() => setIsBulletinsVisible(false)} style={{ padding: 6 }}>
+                <X size={18} color={colors.textPrimary} />
+              </Pressable>
+            </View>
+
+            <ScrollView style={{ marginTop: 14 }} contentContainerStyle={{ paddingBottom: 8 }}>
+              {MOCK_BULLETINS.map((bulletin) => {
+                const isRead = acknowledgedIds.includes(bulletin.id);
+                return (
+                  <View
+                    key={bulletin.id}
+                    style={{
+                      marginBottom: 12,
+                      borderRadius: 16,
+                      borderWidth: 1,
+                      borderColor: bulletin.priority === 'HIGH' ? colors.warning : colors.border,
+                      backgroundColor: bulletin.priority === 'HIGH' ? 'rgba(245,158,11,0.12)' : colors.subpanel,
+                      padding: 14,
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Text style={{ flex: 1, marginRight: 10, fontSize: 14, fontWeight: '800', color: colors.textPrimary }}>{bulletin.title}</Text>
+                      <Text style={{ fontSize: 10, fontWeight: '800', color: isRead ? colors.success : colors.danger }}>{isRead ? 'READ' : 'UNREAD'}</Text>
+                    </View>
+                    <Text style={{ marginTop: 6, fontSize: 11, color: colors.textSecondary }}>{new Date(bulletin.postedAt).toLocaleString()}</Text>
+                    <Text style={{ marginTop: 8, fontSize: 13, lineHeight: 20, color: colors.textSecondary }}>{bulletin.body}</Text>
+                    {!isRead && (
+                      <Pressable
+                        onPress={() => acknowledge(bulletin.id)}
+                        style={{ marginTop: 12, minHeight: 44, borderRadius: 10, backgroundColor: colors.success, alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        <Text style={{ fontSize: 13, fontWeight: '800', color: '#FFFFFF' }}>I Have Read &amp; Understood</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <SelectModal
+        visible={isRoleModalVisible}
+        title="Role Switcher (Mock Sandbox)"
+        options={EMPLOYEE_ROLE_ORDER.map((value) => getEmployeeRoleProfile(value).label)}
+        selectedValue={roleLabel}
+        onSelect={(label) => {
+          const nextRole = EMPLOYEE_ROLE_ORDER.find((value) => getEmployeeRoleProfile(value).label === label);
+          if (nextRole) {
+            switchRole(nextRole);
+          }
+        }}
+        onClose={() => setIsRoleModalVisible(false)}
+      />
     </>
   );
 };

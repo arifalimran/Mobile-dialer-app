@@ -1,4 +1,7 @@
+import type { AgentRole, EmployeeStatus } from '../auth/authTypes';
+
 export type MonthlySalaryGate = {
+  activeDays: number;
   workHoursLogged: number;
   callbackAdherence: number;
   newLeadDialVelocity: number;
@@ -6,22 +9,39 @@ export type MonthlySalaryGate = {
   installmentCollections: number;
   closedWonDeals: number;
   audioDebriefRate: number;
-  disputesUpheld: number;
+  complianceHealth: number;
 };
+
+export interface WeightedMetricResult {
+  key: keyof MonthlySalaryGate;
+  label: string;
+  value: number;
+  target: number;
+  weight: number;
+  normalizedScore: number;
+}
 
 export interface SalaryGateEvaluation {
   isUnlocked: boolean;
+  weightedScore: number;
   completedCount: number;
-  totalCriteria: 8;
+  totalCriteria: number;
+  dealScore: number;
+  operationalScore: number;
+  metricBreakdown: WeightedMetricResult[];
 }
 
 export interface WalletBalanceSummary {
+  role: AgentRole;
+  employeeStatus: EmployeeStatus;
   baseSalary: number;
   baseSalaryStatus: 'LOCKED (KPI IN PROGRESS)' | 'UNLOCKED / CLEARED';
   clearedBalance: number;
   pendingBalance: number;
   commissionEarnings: number;
-  recoveryBounties: number;
-  siteVisitFees: number;
+  activeDaysAllowance: number;
+  attendanceAllowance: number;
+  mobileBillAllowance: number;
+  siteVisitAllowance: number;
   totalAccrued: number;
 }

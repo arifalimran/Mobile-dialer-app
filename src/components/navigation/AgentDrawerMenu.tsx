@@ -66,7 +66,7 @@ export const AgentDrawerMenu: React.FC<AgentDrawerMenuProps> = ({
       screen: 'SITE_VISITS',
       label: 'Site Visits & GPS Check-In',
       Icon: MapPin,
-      roles: ['FIELD_CLOSER', 'ADMIN'],
+      roles: ['FULL_TIME_SALES', 'PART_TIME_SALES'],
     },
     { screen: 'WALLET', label: 'Earnings & Wallet', Icon: Wallet },
   ];

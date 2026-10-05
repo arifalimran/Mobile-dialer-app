@@ -17,10 +17,13 @@ interface TelephonyBridgeState {
   activeLeadId: string | null;
   activeLeadName: string | null;
   activePhone: string | null;
+  activeMode: CallProviderMode | null;
+  shouldOpenDispositionOnForeground: boolean;
   callDurationSeconds: number;
   error: string | null;
   startCall: (params: StartCallParams) => Promise<void>;
   endCall: () => void;
+  handleNativeDialerReturn: () => void;
   reset: () => void;
 }
 
@@ -31,6 +34,8 @@ export const useTelephonyBridge = create<TelephonyBridgeState>((set) => ({
   activeLeadId: null,
   activeLeadName: null,
   activePhone: null,
+  activeMode: null,
+  shouldOpenDispositionOnForeground: false,
   callDurationSeconds: 0,
   error: null,
 
@@ -56,19 +61,23 @@ export const useTelephonyBridge = create<TelephonyBridgeState>((set) => ({
     });
 
     if (result.success) {
-      const startedAt = Date.now();
-      activeTimer = setInterval(() => {
-        set((state) => ({
-          ...state,
-          callDurationSeconds: Math.floor((Date.now() - startedAt) / 1000),
-        }));
-      }, 1000);
+      if (result.mode === 'IPTSP_BRIDGE') {
+        const startedAt = Date.now();
+        activeTimer = setInterval(() => {
+          set((state) => ({
+            ...state,
+            callDurationSeconds: Math.floor((Date.now() - startedAt) / 1000),
+          }));
+        }, 1000);
+      }
 
       set({
         status: 'ACTIVE',
         activeLeadId: leadId,
         activeLeadName: leadName ?? null,
         activePhone: maskedPhoneNumber ?? rawPhoneNumber ?? null,
+        activeMode: result.mode,
+        shouldOpenDispositionOnForeground: result.mode === 'DIRECT_NATIVE_DIALER',
       });
     } else {
       if (activeTimer) {
@@ -81,6 +90,8 @@ export const useTelephonyBridge = create<TelephonyBridgeState>((set) => ({
         activeLeadId: null,
         activeLeadName: null,
         activePhone: null,
+        activeMode: null,
+        shouldOpenDispositionOnForeground: false,
         callDurationSeconds: 0,
         error: result.error ?? 'Failed to place call',
       });
@@ -95,8 +106,29 @@ export const useTelephonyBridge = create<TelephonyBridgeState>((set) => ({
 
     set({
       status: 'DISPOSITION',
+      shouldOpenDispositionOnForeground: false,
       callDurationSeconds: 0,
       error: null,
+    });
+  },
+
+  handleNativeDialerReturn: () => {
+    if (activeTimer) {
+      clearInterval(activeTimer);
+      activeTimer = null;
+    }
+
+    set((state) => {
+      if (state.activeMode !== 'DIRECT_NATIVE_DIALER' || !state.shouldOpenDispositionOnForeground) {
+        return state;
+      }
+
+      return {
+        ...state,
+        status: 'DISPOSITION',
+        shouldOpenDispositionOnForeground: false,
+        callDurationSeconds: 0,
+      };
     });
   },
 
@@ -111,6 +143,8 @@ export const useTelephonyBridge = create<TelephonyBridgeState>((set) => ({
       activeLeadId: null,
       activeLeadName: null,
       activePhone: null,
+      activeMode: null,
+      shouldOpenDispositionOnForeground: false,
       callDurationSeconds: 0,
       error: null,
     });

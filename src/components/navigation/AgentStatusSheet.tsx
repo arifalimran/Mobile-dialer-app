@@ -5,6 +5,7 @@ import { LogOut, MapPin, Plus, Settings, Target } from 'lucide-react-native';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { useAuthStore } from '../../features/auth/hooks/useAuthStore';
 import type { AgentRole } from '../../features/auth/authTypes';
+import { getEmployeeRoleProfile } from '../../features/auth/constants/employeeProfiles';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = [
@@ -90,6 +91,7 @@ export const AgentStatusSheet: React.FC<AgentStatusSheetProps> = ({
 }) => {
   const { colors } = useAppTheme();
   const loginAt = useAuthStore((state) => state.loginAt);
+  const employeeStatus = useAuthStore((state) => state.employeeStatus);
   const [now, setNow] = useState(Date.now());
   const [isConfirmingLogout, setIsConfirmingLogout] = useState(false);
 
@@ -100,7 +102,8 @@ export const AgentStatusSheet: React.FC<AgentStatusSheetProps> = ({
   }, [visible]);
 
   const shiftPill = SHIFT_PILL_STYLES[shiftStatus];
-  const canSeeSiteVisits = role === 'FIELD_CLOSER' || role === 'ADMIN';
+  const roleProfile = getEmployeeRoleProfile(role);
+  const canSeeSiteVisits = roleProfile.featureFlags.canUseSiteVisits;
 
   const handleAction = (action: () => void) => {
     onClose();
@@ -118,10 +121,13 @@ export const AgentStatusSheet: React.FC<AgentStatusSheetProps> = ({
                   {agentName || 'Unregistered Agent'}
                 </Text>
                 <View style={{ borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, paddingHorizontal: 12, paddingVertical: 6 }}>
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: colors.accent }}>{role.replace('_', ' ')}</Text>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: colors.accent }}>{roleProfile.label}</Text>
                 </View>
               </View>
               <Text style={{ marginTop: 4, fontFamily: 'monospace', fontSize: 11, letterSpacing: 0.8, color: colors.textSecondary }}>{corporateSim}</Text>
+              <Text style={{ marginTop: 4, fontSize: 11, color: employeeStatus === 'PERMANENT' ? colors.success : colors.warning }}>
+                {employeeStatus === 'PERMANENT' ? 'Permanent Team Member' : 'Probation Team Member'}
+              </Text>
 
               <View style={{ marginTop: 16, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, padding: 16 }}>
                 <Text style={{ fontFamily: 'monospace', fontSize: 11, letterSpacing: 0.8, color: colors.textSecondary }}>{formatBstNow(new Date(now))}</Text>

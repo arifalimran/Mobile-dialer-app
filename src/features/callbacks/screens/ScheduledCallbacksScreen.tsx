@@ -4,64 +4,14 @@ import { AlertTriangle, Clock3, MessageSquareText } from 'lucide-react-native';
 import { create } from 'zustand';
 
 import { useAppTheme } from '../../../theme/ThemeContext';
+import { MOCK_CALLBACKS } from '../constants/mockCallbacks';
 import { MessageComposerModal } from '../../calling/components/MessageComposerModal';
 import type { MessageHistoryItem } from '../../calling/callingTypes';
 import { maskPhoneNumber } from '../../calling/utils/maskPhoneNumber';
 
-const callbackSeedData = [
-  {
-    id: 'CB-1041',
-    leadName: 'Shahana Akter',
-    phone: '+8801819123456',
-    project: 'Riverside Heights',
-    unit: 'B-09',
-    nextCallback: 'Today • 09:15 AM',
-    note: 'Prospect wants a final comparison call after finance review.',
-    status: 'TODAY' as const,
-    lastTouch: '2 min ago',
-    messageHistory: [] as MessageHistoryItem[],
-  },
-  {
-    id: 'CB-1029',
-    leadName: 'Mahmudul Hasan',
-    phone: '+8801718234567',
-    project: 'Skyline North',
-    unit: 'C-14',
-    nextCallback: 'Today • 12:40 PM',
-    note: 'Requested call after job transfer approval from spouse.',
-    status: 'TODAY' as const,
-    lastTouch: '11 min ago',
-    messageHistory: [] as MessageHistoryItem[],
-  },
-  {
-    id: 'CB-1015',
-    leadName: 'Nusrat Jahan',
-    phone: '+8801918765432',
-    project: 'Garden Lane',
-    unit: 'A-03',
-    nextCallback: 'Overdue • 07:10 AM',
-    note: 'Missed earlier callback; follow-up required today before inventory lock.',
-    status: 'OVERDUE' as const,
-    lastTouch: '36 min ago',
-    messageHistory: [] as MessageHistoryItem[],
-  },
-  {
-    id: 'CB-1088',
-    leadName: 'Zakir Hossain',
-    phone: '+8801555123456',
-    project: 'Harbor Crest',
-    unit: 'D-22',
-    nextCallback: 'Overdue • 08:30 AM',
-    note: 'Customer available in the evening for site visit confirmation.',
-    status: 'OVERDUE' as const,
-    lastTouch: '58 min ago',
-    messageHistory: [] as MessageHistoryItem[],
-  },
-];
-
 type CallbackFilter = 'ALL' | 'TODAY' | 'OVERDUE';
 
-type CallbackRow = (typeof callbackSeedData)[number];
+type CallbackRow = (typeof MOCK_CALLBACKS)[number];
 
 interface ScheduledCallbackState {
   filter: CallbackFilter;
@@ -106,37 +56,41 @@ function SectionBadge({ label, active, onPress, count }: { label: string; active
 }
 
 interface ScheduledCallbacksScreenProps {
-  onBridgeCall?: (lead: {
+  resolvedCallbackIds?: string[];
+  onScrollStateChange?: (isScrolled: boolean) => void;
+  onDialClient?: (lead: {
     id: string;
     leadName: string;
     phone: string;
   }) => void;
 }
 
-export function ScheduledCallbacksScreen({ onBridgeCall }: ScheduledCallbacksScreenProps) {
+export function ScheduledCallbacksScreen({ resolvedCallbackIds = [], onScrollStateChange, onDialClient }: ScheduledCallbacksScreenProps) {
   const { colors } = useAppTheme();
   const filter = useScheduledCallbackStore((state) => state.filter);
   const setFilter = useScheduledCallbackStore((state) => state.setFilter);
-  const [lastBridgeId, setLastBridgeId] = useState<string | null>(null);
-  const [callbackRows, setCallbackRows] = useState<CallbackRow[]>(callbackSeedData);
+  const [lastDialId, setLastDialId] = useState<string | null>(null);
+  const [callbackRows, setCallbackRows] = useState<CallbackRow[]>(MOCK_CALLBACKS);
   const [selectedLead, setSelectedLead] = useState<CallbackRow | null>(null);
 
   const filteredCallbacks = useMemo(() => {
+    const unresolved = callbackRows.filter((callback) => !resolvedCallbackIds.includes(callback.id));
     if (filter === 'ALL') {
-      return callbackRows;
+      return unresolved;
     }
 
-    return callbackRows.filter((callback) => callback.status === filter);
-  }, [callbackRows, filter]);
+    return unresolved.filter((callback) => callback.status === filter);
+  }, [callbackRows, filter, resolvedCallbackIds]);
 
-  const totalDue = callbackRows.length;
-  const completedToday = callbackRows.filter((callback) => callback.status === 'TODAY').length;
-  const adherencePercent = Math.round((completedToday / totalDue) * 100);
+  const unresolvedRows = callbackRows.filter((callback) => !resolvedCallbackIds.includes(callback.id));
+  const totalDue = unresolvedRows.length;
+  const completedToday = unresolvedRows.filter((callback) => callback.status === 'TODAY').length;
+  const adherencePercent = totalDue > 0 ? Math.round((completedToday / totalDue) * 100) : 100;
   const isAdherenceDanger = adherencePercent < 100;
 
-  const handleBridgeCall = (lead: CallbackRow) => {
-    setLastBridgeId(lead.id);
-    onBridgeCall?.({
+  const handleDialClient = (lead: CallbackRow) => {
+    setLastDialId(lead.id);
+    onDialClient?.({
       id: lead.id,
       leadName: lead.leadName,
       phone: lead.phone,
@@ -157,7 +111,13 @@ export function ScheduledCallbacksScreen({ onBridgeCall }: ScheduledCallbacksScr
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.canvas }}>
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 32 }}>
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 32 }}
+        onScroll={(event) => {
+          onScrollStateChange?.(event.nativeEvent.contentOffset.y > 20);
+        }}
+        scrollEventThrottle={16}
+      >
         <View style={{ marginBottom: 18 }}>
           <Text style={{ color: colors.textPrimary, fontSize: 24, fontWeight: '800' }}>Scheduled callbacks</Text>
           <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 6 }}>
@@ -204,7 +164,7 @@ export function ScheduledCallbacksScreen({ onBridgeCall }: ScheduledCallbacksScr
         </View>
 
         {filteredCallbacks.map((callback) => {
-          const isBridgeQueued = lastBridgeId === callback.id;
+          const isDialQueued = lastDialId === callback.id;
           const maskedPhone = maskPhoneNumber(callback.phone);
           const isOverdue = callback.status === 'OVERDUE';
 
@@ -287,18 +247,18 @@ export function ScheduledCallbacksScreen({ onBridgeCall }: ScheduledCallbacksScr
 
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() => handleBridgeCall(callback)}
+                  onPress={() => handleDialClient(callback)}
                   style={{
                     flex: 1,
                     minHeight: 44,
-                    backgroundColor: isBridgeQueued ? colors.accent : colors.accent,
+                    backgroundColor: isDialQueued ? colors.accent : colors.accent,
                     borderRadius: 12,
                     paddingHorizontal: 14,
                     justifyContent: 'center',
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ color: '#F7F3EE', fontSize: 13, fontWeight: '800' }}>{isBridgeQueued ? 'Dialing…' : 'Bridge Call'}</Text>
+                  <Text style={{ color: '#F7F3EE', fontSize: 13, fontWeight: '800' }}>{isDialQueued ? 'Dialing…' : 'Dial Client'}</Text>
                 </Pressable>
               </View>
             </View>

@@ -1,4 +1,21 @@
-export type AgentRole = 'MICRO_CALLER' | 'TELE_DESK' | 'FIELD_CLOSER' | 'ADMIN';
+export type AgentRole =
+  | 'FULL_TIME_SALES'
+  | 'PART_TIME_SALES'
+  | 'CALL_CENTER_MICRO_CALLER'
+  | 'FREELANCER_AGENT';
+
+export type EmployeeStatus = 'PROBATION' | 'PERMANENT';
+
+export interface EmployeeFeatureFlags {
+  canUseDialer: boolean;
+  canUseCallbacks: boolean;
+  canUseInventory: boolean;
+  canUseWallet: boolean;
+  canUseShifts: boolean;
+  canUseKpi: boolean;
+  canUseSiteVisits: boolean;
+  canPlaceInventoryHold: boolean;
+}
 
 export type WorkPreference = 'PART_TIME' | 'FULL_TIME';
 
@@ -35,9 +52,11 @@ export interface AgentProfile {
   presentAddress: AddressDetails;
   reference: ReferencePerson;
   role: AgentRole;
+  employeeStatus?: EmployeeStatus;
   kycStatus: KycStatus;
   /** Set once Head Office approves — masked corporate SIM assigned to this agent. */
   corporateSim?: string;
+  sessionId?: string;
   regionalHub?: string;
   submittedAt?: number;
 }

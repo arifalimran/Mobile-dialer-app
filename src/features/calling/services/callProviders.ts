@@ -24,7 +24,7 @@ async function callViaNativeSim(rawPhoneNumber?: string): Promise<CallProviderRe
   if (!rawPhoneNumber) {
     return {
       success: false,
-      mode: 'NATIVE_SIM',
+      mode: 'DIRECT_NATIVE_DIALER',
       error: 'This lead has no dialable number in Native SIM mode. Masked leads require IPTSP Bridge.',
     };
   }
@@ -32,11 +32,11 @@ async function callViaNativeSim(rawPhoneNumber?: string): Promise<CallProviderRe
   const url = `tel:${rawPhoneNumber}`;
   const canOpen = await Linking.canOpenURL(url);
   if (!canOpen) {
-    return { success: false, mode: 'NATIVE_SIM', error: 'Unable to open the native dialer.' };
+    return { success: false, mode: 'DIRECT_NATIVE_DIALER', error: 'Unable to open the native dialer.' };
   }
 
   await Linking.openURL(url);
-  return { success: true, mode: 'NATIVE_SIM' };
+  return { success: true, mode: 'DIRECT_NATIVE_DIALER' };
 }
 
 export async function placeCall(params: {
@@ -44,7 +44,7 @@ export async function placeCall(params: {
   request: BridgeCallRequest;
   rawPhoneNumber?: string;
 }): Promise<CallProviderResult> {
-  if (params.mode === 'NATIVE_SIM') {
+  if (params.mode === 'DIRECT_NATIVE_DIALER') {
     return callViaNativeSim(params.rawPhoneNumber);
   }
   return callViaIptspBridge(params.request);

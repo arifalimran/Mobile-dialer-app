@@ -9,7 +9,7 @@ interface AgentConfigState extends AgentConfig {
 
 export const useAgentConfig = create<AgentConfigState>((set) => ({
   agentPhone: '',
-  callProviderMode: 'IPTSP_BRIDGE',
+  callProviderMode: 'DIRECT_NATIVE_DIALER',
   setAgentPhone: (agentPhone) => set({ agentPhone }),
   setCallProviderMode: (callProviderMode) => set({ callProviderMode }),
 }));

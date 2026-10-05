@@ -12,6 +12,8 @@ export type LeadSource =
   | 'Website'
   | 'Field Agent Entry';
 
+export type CustomerType = 'Individual' | 'Corporate' | 'Investor' | 'End-User';
+
 export interface CallbackNote {
   note: string;
   scheduledFor: number;
@@ -29,6 +31,10 @@ export interface LeadContact {
   id: string;
   name: string;
   vertical: BusinessVertical;
+  customerType?: CustomerType;
+  companyName?: string;
+  designation?: string;
+  homeAddress?: string;
   location: string;
   budget: string;
   maskedPhoneNumber: string;
@@ -50,12 +56,15 @@ export interface LeadContact {
 export type CallStatus = 'IDLE' | 'CONNECTING' | 'ACTIVE' | 'DISPOSITION';
 
 export type Disposition =
-  | 'BOOK_SITE_VISIT'
-  | 'CALLBACK_LATER'
-  | 'SEND_WHATSAPP_INFO'
+  | 'INTERESTED_SITE_VISIT'
+  | 'CALLBACK_SCHEDULED'
+  | 'WRONG_PERSON'
+  | 'INVALID_NUMBER'
+  | 'NO_ANSWER_ATTEMPT_1'
+  | 'FAKE_LEAD'
   | 'NOT_INTERESTED';
 
-export type CallProviderMode = 'NATIVE_SIM' | 'IPTSP_BRIDGE';
+export type CallProviderMode = 'DIRECT_NATIVE_DIALER' | 'IPTSP_BRIDGE';
 
 export interface AgentConfig {
   agentPhone: string;

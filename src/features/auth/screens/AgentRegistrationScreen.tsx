@@ -153,7 +153,7 @@ export const AgentRegistrationScreen: React.FC<AgentRegistrationScreenProps> = (
         contactPhone: referencePhone.trim(),
         fullAddress: referenceAddress.trim(),
       },
-      role: 'MICRO_CALLER',
+      role: 'CALL_CENTER_MICRO_CALLER',
     };
 
     submitRegistration(profile);

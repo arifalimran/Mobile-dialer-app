@@ -14,7 +14,7 @@ import {
 import { X } from 'lucide-react-native';
 
 import { useAppTheme } from '../../../theme/ThemeContext';
-import type { BusinessVertical, LeadContact } from '../callingTypes';
+import type { BusinessVertical, CustomerType, LeadContact } from '../callingTypes';
 import { BUSINESS_VERTICALS, VERTICAL_BADGE_STYLES } from '../constants/verticalOptions';
 import { maskPhoneNumber } from '../utils/maskPhoneNumber';
 
@@ -28,18 +28,28 @@ export const AddLeadSheet: React.FC<AddLeadSheetProps> = ({ visible, onClose, on
   const { colors } = useAppTheme();
   const [name, setName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [customerType, setCustomerType] = useState<CustomerType>('Individual');
+  const [companyName, setCompanyName] = useState('');
+  const [designation, setDesignation] = useState('');
   const [vertical, setVertical] = useState<BusinessVertical>('Land Sharing');
   const [budget, setBudget] = useState('');
   const [location, setLocation] = useState('');
+  const [homeAddress, setHomeAddress] = useState('');
+
+  const customerTypes: CustomerType[] = ['Individual', 'Corporate', 'Investor', 'End-User'];
 
   const isValid = name.trim().length > 0 && phoneNumber.replace(/\D/g, '').length >= 10;
 
   const resetForm = () => {
     setName('');
     setPhoneNumber('');
+    setCustomerType('Individual');
+    setCompanyName('');
+    setDesignation('');
     setVertical('Land Sharing');
     setBudget('');
     setLocation('');
+    setHomeAddress('');
   };
 
   const handleClose = () => {
@@ -56,6 +66,10 @@ export const AddLeadSheet: React.FC<AddLeadSheetProps> = ({ visible, onClose, on
       id: `lead-custom-${Date.now()}`,
       name: name.trim(),
       vertical,
+      customerType,
+      companyName: companyName.trim() || undefined,
+      designation: designation.trim() || undefined,
+      homeAddress: homeAddress.trim() || undefined,
       location: location.trim() || 'Not specified',
       budget: budget.trim() || 'Not specified',
       maskedPhoneNumber: maskPhoneNumber(phoneNumber),
@@ -114,6 +128,46 @@ export const AddLeadSheet: React.FC<AddLeadSheetProps> = ({ visible, onClose, on
                 style={{ marginTop: 8, minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, paddingHorizontal: 16, fontSize: 16, color: colors.textPrimary }}
               />
 
+              <Text style={{ marginTop: 16, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, color: colors.textSecondary }}>CUSTOMER TYPE</Text>
+              <View style={{ marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {customerTypes.map((option) => {
+                  const isSelected = option === customerType;
+                  return (
+                    <Pressable
+                      key={option}
+                      onPress={() => setCustomerType(option)}
+                      style={{ minHeight: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: isSelected ? colors.subpanel : colors.card, paddingHorizontal: 14 }}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: isSelected ? colors.accent : colors.textSecondary }}>
+                        {option}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <Text style={{ marginTop: 16, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, color: colors.textSecondary }}>COMPANY / BUSINESS</Text>
+              <TextInput
+                value={companyName}
+                onChangeText={setCompanyName}
+                placeholder="Company name"
+                placeholderTextColor={colors.textSecondary}
+                returnKeyType="done"
+                onSubmitEditing={() => Keyboard.dismiss()}
+                style={{ marginTop: 8, minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, paddingHorizontal: 16, fontSize: 16, color: colors.textPrimary }}
+              />
+
+              <Text style={{ marginTop: 16, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, color: colors.textSecondary }}>DESIGNATION</Text>
+              <TextInput
+                value={designation}
+                onChangeText={setDesignation}
+                placeholder="Job title / role"
+                placeholderTextColor={colors.textSecondary}
+                returnKeyType="done"
+                onSubmitEditing={() => Keyboard.dismiss()}
+                style={{ marginTop: 8, minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, paddingHorizontal: 16, fontSize: 16, color: colors.textPrimary }}
+              />
+
               <Text style={{ marginTop: 16, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, color: colors.textSecondary }}>VERTICAL</Text>
               <View style={{ marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {BUSINESS_VERTICALS.map((option) => {
@@ -153,6 +207,17 @@ export const AddLeadSheet: React.FC<AddLeadSheetProps> = ({ visible, onClose, on
                 returnKeyType="done"
                 onSubmitEditing={() => Keyboard.dismiss()}
                 style={{ marginTop: 8, minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, paddingHorizontal: 16, fontSize: 16, color: colors.textPrimary }}
+              />
+
+              <Text style={{ marginTop: 16, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, color: colors.textSecondary }}>HOME ADDRESS (OPTIONAL)</Text>
+              <TextInput
+                value={homeAddress}
+                onChangeText={setHomeAddress}
+                placeholder="House, road, thana"
+                placeholderTextColor={colors.textSecondary}
+                multiline
+                numberOfLines={3}
+                style={{ marginTop: 8, minHeight: 88, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, paddingHorizontal: 16, paddingVertical: 12, fontSize: 16, color: colors.textPrimary }}
               />
 
               <Pressable

@@ -1,12 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
-import { ArrowUpRight, CheckCircle2, Crown, ShieldCheck, Wallet } from 'lucide-react-native';
+import { ArrowUpRight, Crown, ShieldCheck } from 'lucide-react-native';
 
 import { useAppTheme } from '../../../theme/ThemeContext';
+import { getEmployeeRoleProfile } from '../../auth/constants/employeeProfiles';
+import { useAuthStore } from '../../auth/hooks/useAuthStore';
 import { maskPhoneNumber } from '../../calling/utils/maskPhoneNumber';
 import {
   MONTHLY_SALARY_GATE_METRICS,
-  SAMPLE_MONTHLY_SALARY_GATE,
+  getSampleMonthlySalaryGate,
   calculateBalances,
   evaluateSalaryGate,
 } from '../utils/kpiEngine';
@@ -20,10 +22,13 @@ const recentLedgerRows = [
 
 export function WalletScreen() {
   const { colors } = useAppTheme();
+  const role = useAuthStore((state) => state.role);
+  const employeeStatus = useAuthStore((state) => state.employeeStatus);
+  const roleProfile = getEmployeeRoleProfile(role);
   const [selectedMetricKey, setSelectedMetricKey] = useState<string | null>(null);
-  const kpi = SAMPLE_MONTHLY_SALARY_GATE;
-  const gate = useMemo(() => evaluateSalaryGate(kpi), []);
-  const balances = useMemo(() => calculateBalances(kpi), []);
+  const kpi = useMemo(() => getSampleMonthlySalaryGate(role), [role]);
+  const gate = useMemo(() => evaluateSalaryGate(kpi, role), [kpi, role]);
+  const balances = useMemo(() => calculateBalances(kpi, role, employeeStatus), [employeeStatus, kpi, role]);
   const selectedMetric = MONTHLY_SALARY_GATE_METRICS.find((metric) => metric.key === selectedMetricKey) ?? null;
 
   const formatCurrency = (value: number) => `৳${new Intl.NumberFormat('en-BD', { maximumFractionDigits: 0 }).format(value)}`;
@@ -32,12 +37,8 @@ export function WalletScreen() {
     const metric = MONTHLY_SALARY_GATE_METRICS.find((entry) => entry.key === metricKey);
     if (!metric) return 0;
 
-    const current = SAMPLE_MONTHLY_SALARY_GATE[metric.key as keyof typeof SAMPLE_MONTHLY_SALARY_GATE];
+    const current = kpi[metric.key as keyof typeof kpi];
     const numeric = Number(current ?? 0);
-
-    if (metric.key === 'disputesUpheld') {
-      return numeric <= 0 ? 100 : Math.min(100, (numeric / metric.target) * 100);
-    }
 
     return Math.min(100, (numeric / metric.target) * 100);
   };
@@ -46,11 +47,11 @@ export function WalletScreen() {
     const metric = MONTHLY_SALARY_GATE_METRICS.find((entry) => entry.key === metricKey);
     if (!metric) return '0';
 
-    const current = SAMPLE_MONTHLY_SALARY_GATE[metric.key as keyof typeof SAMPLE_MONTHLY_SALARY_GATE];
+    const current = kpi[metric.key as keyof typeof kpi];
     const numeric = Number(current ?? 0);
 
     if (metric.key === 'workHoursLogged') return `${numeric.toFixed(1)} hrs`;
-    if (metric.key === 'callbackAdherence' || metric.key === 'newLeadDialVelocity' || metric.key === 'audioDebriefRate') {
+    if (metric.key === 'callbackAdherence' || metric.key === 'newLeadDialVelocity' || metric.key === 'audioDebriefRate' || metric.key === 'complianceHealth') {
       return `${numeric.toFixed(2)} / ${metric.target.toFixed(2)}`;
     }
     return `${numeric} / ${metric.target}`;
@@ -60,9 +61,9 @@ export function WalletScreen() {
     const metric = MONTHLY_SALARY_GATE_METRICS.find((entry) => entry.key === metricKey);
     if (!metric) return { label: 'In Progress', color: colors.warning };
 
-    const current = SAMPLE_MONTHLY_SALARY_GATE[metric.key as keyof typeof SAMPLE_MONTHLY_SALARY_GATE];
+    const current = kpi[metric.key as keyof typeof kpi];
     const numeric = Number(current ?? 0);
-    const isMet = metric.key === 'disputesUpheld' ? numeric <= 0 : numeric >= metric.target;
+    const isMet = numeric >= metric.target;
 
     return { label: isMet ? 'Met' : 'In Progress', color: isMet ? colors.success : colors.warning };
   };
@@ -79,16 +80,17 @@ export function WalletScreen() {
           <Text style={{ fontSize: 12, fontWeight: '800', letterSpacing: 0.8, color: colors.textSecondary }}>CURRENT TIER</Text>
           <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ backgroundColor: 'rgba(200,155,74,0.16)', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 }}>
-              <Text style={{ color: colors.brassAccent, fontSize: 16, fontWeight: '800' }}>Gold Caller</Text>
+              <Text style={{ color: colors.brassAccent, fontSize: 16, fontWeight: '800' }}>{roleProfile.tierLabel}</Text>
             </View>
-            <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: '800' }}>1.25% commission</Text>
+            <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: '800' }}>{(roleProfile.commissionRate * 100).toFixed(2)}% commission</Text>
           </View>
+          <Text style={{ marginTop: 10, fontSize: 13, color: colors.textSecondary }}>Tier: {roleProfile.tierLabel} • Active • Rank #2 • {employeeStatus === 'PERMANENT' ? 'Permanent' : 'Probation'}</Text>
         </View>
 
         <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
           <View style={{ flex: 1, backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 14 }}>
             <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Cleared Payout</Text>
-            <Text style={{ color: colors.textPrimary, fontSize: 24, fontWeight: '800', marginTop: 8 }}>৳{(balances.clearedBalance + 20000).toLocaleString('en-BD')}</Text>
+            <Text style={{ color: colors.textPrimary, fontSize: 24, fontWeight: '800', marginTop: 8 }}>৳{balances.clearedBalance.toLocaleString('en-BD')}</Text>
             <Text style={{ color: colors.success, marginTop: 6, fontSize: 11, fontWeight: '700' }}>Disbursement on 1st &amp; 15th</Text>
           </View>
           <View style={{ flex: 1, backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 14 }}>
@@ -115,9 +117,9 @@ export function WalletScreen() {
 
         <View style={{ marginTop: 18, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>Monthly Salary Gate</Text>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>Monthly Weighted Gate</Text>
             <Text style={{ fontSize: 12, fontWeight: '800', color: gate.isUnlocked ? colors.success : colors.warning }}>
-              {gate.completedCount}/{gate.totalCriteria}
+              {gate.weightedScore.toFixed(1)} / 100
             </Text>
           </View>
 
@@ -169,12 +171,20 @@ export function WalletScreen() {
               <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>{formatCurrency(balances.commissionEarnings)}</Text>
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 }}>
-              <Text style={{ color: colors.textSecondary }}>Recovery Bounties</Text>
-              <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>{formatCurrency(balances.recoveryBounties)}</Text>
+              <Text style={{ color: colors.textSecondary }}>Active Day Allowance</Text>
+              <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>{formatCurrency(balances.activeDaysAllowance)}</Text>
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 }}>
-              <Text style={{ color: colors.textSecondary }}>Site Visit Fees</Text>
-              <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>{formatCurrency(balances.siteVisitFees)}</Text>
+              <Text style={{ color: colors.textSecondary }}>Attendance Allowance</Text>
+              <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>{formatCurrency(balances.attendanceAllowance)}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 }}>
+              <Text style={{ color: colors.textSecondary }}>Mobile Bill Allowance</Text>
+              <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>{formatCurrency(balances.mobileBillAllowance)}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 }}>
+              <Text style={{ color: colors.textSecondary }}>Site Visit Allowance</Text>
+              <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>{formatCurrency(balances.siteVisitAllowance)}</Text>
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingTop: 10, marginTop: 8, borderTopWidth: 1, borderTopColor: colors.border }}>
               <Text style={{ color: colors.textPrimary, fontWeight: '800' }}>Cleared Balance</Text>
@@ -188,11 +198,11 @@ export function WalletScreen() {
           <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Crown size={18} color={colors.brassAccent} />
-              <Text style={{ marginLeft: 8, fontSize: 16, fontWeight: '800', color: colors.textPrimary }}>Gold Caller</Text>
+              <Text style={{ marginLeft: 8, fontSize: 16, fontWeight: '800', color: colors.textPrimary }}>{roleProfile.tierLabel}</Text>
             </View>
-            <Text style={{ fontSize: 12, color: colors.textSecondary }}>1.25% commission</Text>
+            <Text style={{ fontSize: 12, color: colors.textSecondary }}>{(roleProfile.commissionRate * 100).toFixed(2)}% commission</Text>
           </View>
-          <Text style={{ marginTop: 10, fontSize: 12, color: colors.textSecondary }}>High-priority queue • priority propagation • faster callback triage.</Text>
+          <Text style={{ marginTop: 10, fontSize: 12, color: colors.textSecondary }}>Deal weight 65% • operational score 35% • allowances unlock with compliance.</Text>
         </View>
 
         <View style={{ marginTop: 18, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 16 }}>
@@ -227,6 +237,7 @@ export function WalletScreen() {
                 <Text style={{ fontSize: 11, fontWeight: '800', letterSpacing: 0.8, color: colors.textSecondary }}>RULE</Text>
                 <Text style={{ marginTop: 8, fontSize: 13, lineHeight: 20, color: colors.textPrimary }}>{selectedMetric.description}</Text>
                 <Text style={{ marginTop: 12, fontSize: 12, color: colors.textSecondary }}>{selectedMetric.progressHint}</Text>
+                <Text style={{ marginTop: 8, fontSize: 12, color: colors.brassAccent }}>{selectedMetric.weight}% of total gate</Text>
               </View>
 
               <View style={{ marginTop: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>

@@ -15,6 +15,7 @@ import {
   Clock,
   MessageCircle,
   Mic,
+  PhoneOff,
   Square,
   XCircle,
 } from 'lucide-react-native';
@@ -35,33 +36,51 @@ interface DispositionOption {
   value: Disposition;
   label: string;
   Icon: typeof CalendarCheck;
-  className: string;
+  color: string;
 }
 
 const DISPOSITION_OPTIONS: DispositionOption[] = [
   {
-    value: 'BOOK_SITE_VISIT',
-    label: 'Book Site Visit',
+    value: 'INTERESTED_SITE_VISIT',
+    label: 'Interested (Site Visit Requested)',
     Icon: CalendarCheck,
-    className: 'bg-emerald-600',
+    color: '#10B981',
   },
   {
-    value: 'CALLBACK_LATER',
-    label: 'Callback Later',
+    value: 'CALLBACK_SCHEDULED',
+    label: 'Callback Scheduled (Set Calendar)',
     Icon: Clock,
-    className: 'bg-amber-600',
+    color: '#F59E0B',
   },
   {
-    value: 'SEND_WHATSAPP_INFO',
-    label: 'Send WhatsApp Info',
+    value: 'WRONG_PERSON',
+    label: 'Wrong Person / Not Inquirer',
+    Icon: XCircle,
+    color: '#64748B',
+  },
+  {
+    value: 'INVALID_NUMBER',
+    label: 'Invalid / Out of Service Number',
+    Icon: PhoneOff,
+    color: '#0EA5E9',
+  },
+  {
+    value: 'NO_ANSWER_ATTEMPT_1',
+    label: 'Ringing / No Answer (Attempt 1)',
     Icon: MessageCircle,
-    className: 'bg-sky-600',
+    color: '#8B5CF6',
+  },
+  {
+    value: 'FAKE_LEAD',
+    label: 'Fake Lead / Competitor Inquiry',
+    Icon: XCircle,
+    color: '#F43F5E',
   },
   {
     value: 'NOT_INTERESTED',
-    label: 'Not Interested',
+    label: 'Not Interested / Budget Out of Range',
     Icon: XCircle,
-    className: 'bg-rose-600',
+    color: '#FB7185',
   },
 ];
 
@@ -115,7 +134,7 @@ export const PostCallDrawer: React.FC<PostCallDrawerProps> = ({
   };
 
   const handleDispositionPress = (disposition: Disposition) => {
-    if (disposition === 'CALLBACK_LATER') {
+    if (disposition === 'CALLBACK_SCHEDULED') {
       setIsSchedulingCallback(true);
       return;
     }
@@ -135,7 +154,7 @@ export const PostCallDrawer: React.FC<PostCallDrawerProps> = ({
 
   const handleConfirmCallback = () => {
     if (!callbackAt || callbackNote.trim().length === 0) return;
-    submitDisposition('CALLBACK_LATER', { callbackAt, callbackNote: callbackNote.trim() });
+    submitDisposition('CALLBACK_SCHEDULED', { callbackAt, callbackNote: callbackNote.trim() });
   };
 
   const seconds = Math.min(15, Math.floor(durationMs / 1000));
@@ -240,11 +259,11 @@ export const PostCallDrawer: React.FC<PostCallDrawerProps> = ({
               </View>
             ) : (
               <View style={{ marginTop: 20, flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                {DISPOSITION_OPTIONS.map(({ value, label, Icon, className }) => (
+                {DISPOSITION_OPTIONS.map(({ value, label, Icon, color }) => (
                   <Pressable
                     key={value}
                     onPress={() => handleDispositionPress(value)}
-                    style={{ minHeight: 48, width: '48%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: value === 'BOOK_SITE_VISIT' ? '#10B981' : value === 'CALLBACK_LATER' ? '#F59E0B' : value === 'SEND_WHATSAPP_INFO' ? '#38BDF8' : '#F43F5E' }}
+                    style={{ minHeight: 48, width: '48%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: color, paddingHorizontal: 8 }}
                   >
                     <Icon size={18} color="#ffffff" />
                     <Text style={{ marginLeft: 8, fontSize: 13, fontWeight: '700', color: '#FFFFFF' }}>{label}</Text>

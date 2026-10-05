@@ -14,9 +14,10 @@ function todayIso(): string {
 /** Module 5 screen: pick a shift slot, see current booking, or see the penalty lockout banner. */
 export const ShiftBookingScreen: React.FC = () => {
   const { colors } = useAppTheme();
-  const { myBooking, lockStatus, lockedUntil, bookSlot, cancelBooking, clearExpiredLock } =
+  const { bookings, lockStatus, lockedUntil, bookSlot, cancelBooking, clearExpiredLock } =
     useShiftStore();
   const [dateIso] = useState(todayIso());
+  const myBooking = bookings.find((booking) => booking.dateIso === dateIso) ?? null;
 
   useEffect(() => {
     clearExpiredLock();
@@ -71,7 +72,7 @@ export const ShiftBookingScreen: React.FC = () => {
             Cancelling within 48 hours before start applies a 7-day penalty.
           </Text>
           <Pressable
-            onPress={() => cancelBooking()}
+            onPress={() => cancelBooking(myBooking.id)}
             style={{ marginTop: 12, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.success, backgroundColor: colors.card }}
           >
             <Text style={{ fontSize: 14, fontWeight: '700', color: colors.success }}>Cancel Booking</Text>

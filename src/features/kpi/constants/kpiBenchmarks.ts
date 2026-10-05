@@ -3,46 +3,46 @@ import type { KpiPolicyRevision, RoleKpiProfile } from '../kpiTypes';
 
 /** Mock role-specific evaluation benchmarks (Module 6). Replace with a Head-Office-managed API. */
 export const ROLE_KPI_PROFILES: Record<AgentRole, RoleKpiProfile> = {
-  MICRO_CALLER: {
-    role: 'MICRO_CALLER',
+  FULL_TIME_SALES: {
+    role: 'FULL_TIME_SALES',
     benchmarks: [
-      { label: 'Daily Dials', target: '80–120 calls/day' },
-      { label: 'Connect Rate', target: '≥ 60%' },
-      { label: 'Qualified Lead Transfers', target: '≥ 8/day' },
+      { label: 'Weighted Gate', target: '75%+ unlock score' },
+      { label: 'Deal Contribution', target: '65% of total wallet score' },
+      { label: 'Operational Coverage', target: '7 metrics x 5% each' },
     ],
   },
-  TELE_DESK: {
-    role: 'TELE_DESK',
+  PART_TIME_SALES: {
+    role: 'PART_TIME_SALES',
     benchmarks: [
-      { label: 'Talk Time', target: '2.5h – 3h/day' },
-      { label: 'Confirmed Site Visits Booked', target: '≥ 5/week' },
-      { label: 'Audio Debrief Completion Rate', target: '≥ 95%' },
+      { label: 'Shift Utilization', target: '60+ monthly work hours' },
+      { label: 'Callback Discipline', target: '95%+ adherence' },
+      { label: 'Deal Momentum', target: '1 closed unit monthly' },
     ],
   },
-  FIELD_CLOSER: {
-    role: 'FIELD_CLOSER',
+  CALL_CENTER_MICRO_CALLER: {
+    role: 'CALL_CENTER_MICRO_CALLER',
     benchmarks: [
-      { label: 'Physical Tours Completed', target: '≥ 6/week' },
-      { label: 'Tokens Secured', target: '≥ 2/week' },
-      { label: 'GPS Check-In Compliance', target: '100%' },
+      { label: 'Fresh Lead Coverage', target: '70%+ dial velocity' },
+      { label: 'Audio Debriefs', target: '95%+ completion' },
+      { label: 'Collections Support', target: '5 recoveries monthly' },
     ],
   },
-  ADMIN: {
-    role: 'ADMIN',
-    benchmarks: [{ label: 'Team Oversight', target: 'All region benchmarks green' }],
+  FREELANCER_AGENT: {
+    role: 'FREELANCER_AGENT',
+    benchmarks: [{ label: 'Independent Closing', target: 'Commission-led payout only' }],
   },
 };
 
 /** Example upcoming policy revision — Head Office gives 7 days' advance notice. */
 export const UPCOMING_KPI_REVISIONS: KpiPolicyRevision[] = [
   {
-    role: 'MICRO_CALLER',
+    role: 'FULL_TIME_SALES',
     effectiveInDays: 5,
-    current: ROLE_KPI_PROFILES.MICRO_CALLER.benchmarks,
+    current: ROLE_KPI_PROFILES.FULL_TIME_SALES.benchmarks,
     upcoming: [
-      { label: 'Daily Dials', target: '100–140 calls/day' },
-      { label: 'Connect Rate', target: '≥ 65%' },
-      { label: 'Qualified Lead Transfers', target: '≥ 10/day' },
+      { label: 'Weighted Gate', target: '80%+ unlock score' },
+      { label: 'Deal Contribution', target: '2 units weighted equivalent' },
+      { label: 'Operational Coverage', target: '95% compliance health' },
     ],
   },
 ];
