@@ -16,6 +16,9 @@ export interface AppThemeTokens {
   warning: string;
   danger: string;
   overlay: string;
+  iconBtnBg: string;
+  iconBtnBorder: string;
+  iconBtnText: string;
 }
 
 export const themeTokens: Record<ThemeMode, AppThemeTokens> = {
@@ -35,6 +38,9 @@ export const themeTokens: Record<ThemeMode, AppThemeTokens> = {
     warning: '#F59E0B',
     danger: '#F87171',
     overlay: 'rgba(30, 32, 37, 0.72)',
+    iconBtnBg: '#323743',
+    iconBtnBorder: 'rgba(255,255,255,0.18)',
+    iconBtnText: '#F3F4F6',
   },
   light: {
     canvas: '#F7F3EE',
@@ -52,6 +58,9 @@ export const themeTokens: Record<ThemeMode, AppThemeTokens> = {
     warning: '#F59E0B',
     danger: '#F43F5E',
     overlay: 'rgba(255, 255, 255, 0.78)',
+    iconBtnBg: '#E8E3DA',
+    iconBtnBorder: 'rgba(16,21,28,0.12)',
+    iconBtnText: '#10151C',
   },
 };
 

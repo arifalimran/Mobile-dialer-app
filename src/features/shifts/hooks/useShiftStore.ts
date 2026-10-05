@@ -9,11 +9,21 @@ interface ShiftState {
   lockedUntil: number | null;
   attendanceHistory: AttendanceSession[];
   activeSessionStartedAt: number | null;
+  isOnBreak: boolean;
+  breakStartedAt: number | null;
+  breakEndsAt: number | null;
+  accumulatedBreakMs: number;
+  isAttendanceModalOpen: boolean;
   bookSlot: (slotId: string, dateIso: string) => void;
   cancelBooking: (bookingId: string, forcePenalty?: boolean) => void;
   clearExpiredLock: () => void;
   startDutySession: () => { ok: boolean; reason?: string };
   endDutySession: () => AttendanceSession | null;
+  startBreak: (minutes: number) => void;
+  endBreak: () => void;
+  checkBreakExpiry: () => void;
+  openAttendanceModal: () => void;
+  closeAttendanceModal: () => void;
 }
 
 const MAX_SLOTS_PER_WEEK = 6;
@@ -61,6 +71,11 @@ export const useShiftStore = create<ShiftState>((set, get) => ({
   lockedUntil: null,
   attendanceHistory: [],
   activeSessionStartedAt: null,
+  isOnBreak: false,
+  breakStartedAt: null,
+  breakEndsAt: null,
+  accumulatedBreakMs: 0,
+  isAttendanceModalOpen: false,
 
   bookSlot: (slotId, dateIso) => {
     const { lockStatus, lockedUntil, bookings } = get();
@@ -120,16 +135,25 @@ export const useShiftStore = create<ShiftState>((set, get) => ({
       return { ok: false, reason: 'Dialer duty unlocks only during approved shift slots.' };
     }
 
-    set({ activeSessionStartedAt: Date.now() });
+    set({
+      activeSessionStartedAt: Date.now(),
+      isOnBreak: false,
+      breakStartedAt: null,
+      breakEndsAt: null,
+      accumulatedBreakMs: 0,
+    });
     return { ok: true };
   },
 
   endDutySession: () => {
-    const { activeSessionStartedAt, attendanceHistory, bookings } = get();
+    const { activeSessionStartedAt, attendanceHistory, bookings, isOnBreak, breakStartedAt, accumulatedBreakMs } = get();
     if (!activeSessionStartedAt) return null;
 
     const endedAt = Date.now();
-    const hoursWorked = Number(((endedAt - activeSessionStartedAt) / (1000 * 60 * 60)).toFixed(2));
+    const finalBreakMs = isOnBreak && breakStartedAt ? accumulatedBreakMs + (endedAt - breakStartedAt) : accumulatedBreakMs;
+    const hoursWorked = Number(
+      (Math.max(0, endedAt - activeSessionStartedAt - finalBreakMs) / (1000 * 60 * 60)).toFixed(2),
+    );
     const approvedBooking = getApprovedBookingForToday(bookings);
     const session: AttendanceSession = {
       id: `attendance-${endedAt}`,
@@ -143,8 +167,46 @@ export const useShiftStore = create<ShiftState>((set, get) => ({
 
     set({
       activeSessionStartedAt: null,
+      isOnBreak: false,
+      breakStartedAt: null,
+      breakEndsAt: null,
+      accumulatedBreakMs: 0,
       attendanceHistory: [session, ...attendanceHistory],
     });
     return session;
   },
+
+  startBreak: (minutes) => {
+    const { activeSessionStartedAt, isOnBreak } = get();
+    if (!activeSessionStartedAt || isOnBreak) return;
+
+    const now = Date.now();
+    set({
+      isOnBreak: true,
+      breakStartedAt: now,
+      breakEndsAt: now + minutes * 60 * 1000,
+    });
+  },
+
+  endBreak: () => {
+    const { isOnBreak, breakStartedAt, accumulatedBreakMs } = get();
+    if (!isOnBreak || !breakStartedAt) return;
+
+    set({
+      isOnBreak: false,
+      breakStartedAt: null,
+      breakEndsAt: null,
+      accumulatedBreakMs: accumulatedBreakMs + (Date.now() - breakStartedAt),
+    });
+  },
+
+  checkBreakExpiry: () => {
+    const { isOnBreak, breakEndsAt, endBreak } = get();
+    if (isOnBreak && breakEndsAt && Date.now() >= breakEndsAt) {
+      endBreak();
+    }
+  },
+
+  openAttendanceModal: () => set({ isAttendanceModalOpen: true }),
+  closeAttendanceModal: () => set({ isAttendanceModalOpen: false }),
 }));

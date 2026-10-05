@@ -1,57 +1,50 @@
 import React from 'react';
 import { Animated, Pressable, Text, View } from 'react-native';
-import { Bell, Building2, Cog, Moon, Plus, Sun } from 'lucide-react-native';
+import { Bell, Building2, Moon, Sun, User } from 'lucide-react-native';
 
 import { useAppTheme } from '../../theme/ThemeContext';
+import { useAuthStore } from '../../features/auth/hooks/useAuthStore';
 
 interface AppHeaderProps {
   agentName: string;
-  employeeStatus: 'PROBATION' | 'PERMANENT';
+  maskedSim: string;
   sessionId: string;
   unreadBulletinCount: number;
-  dutyStartedAt: number | null;
-  dutyHoursToday: number;
-  pendingDutyHours: number;
-  isScrolled?: boolean;
   isOnDuty: boolean;
+  isScrolled?: boolean;
   onOpenBulletins: () => void;
-  onOpenAddLead: () => void;
-  onToggleDuty: () => void;
-  onOpenSettings: () => void;
-  onOpenStatusSheet?: () => void;
+  onOpenProfile: () => void;
 }
 
 /**
- * Module 1: de-cluttered, single-row 56px global header. Left: brand mark.
- * Right: theme switcher, notification bell (settings shortcut), agent avatar
- * (opens `AgentStatusSheet`, which now carries the live BST clock, session
- * ticker, corporate SIM, and shift status that used to clutter this row).
+ * Module 1: de-cluttered, two-row global header. Row 1 (52px) carries only
+ * the brand mark plus 3 compact 40x40 icon buttons: bulletins bell, theme
+ * switcher, and the agent avatar (opens `ProfileDrawer`, which now owns the
+ * duty/break state machine, quick actions, and settings that used to
+ * clutter this row). Row 2 (34px, auto-collapses on scroll) shows the
+ * masked SIM identity and a continuous login-duration ticker sourced from
+ * `useAuthStore`'s `loginAt`, so it never freezes or resets across tabs.
  */
 export const AppHeader: React.FC<AppHeaderProps> = ({
   agentName,
-  employeeStatus,
+  maskedSim,
   sessionId,
   unreadBulletinCount,
-  dutyStartedAt,
-  dutyHoursToday,
-  pendingDutyHours,
-  isScrolled,
   isOnDuty,
+  isScrolled,
   onOpenBulletins,
-  onOpenAddLead,
-  onToggleDuty,
-  onOpenSettings,
-  onOpenStatusSheet,
+  onOpenProfile,
 }) => {
   const { colors, theme, toggleTheme } = useAppTheme();
+  const loginAt = useAuthStore((state) => state.loginAt);
   const [ticker, setTicker] = React.useState(Date.now());
   const rowTwoProgress = React.useRef(new Animated.Value(isScrolled ? 0 : 1)).current;
 
   React.useEffect(() => {
-    if (!isOnDuty || !dutyStartedAt) return;
+    if (!loginAt) return;
     const interval = setInterval(() => setTicker(Date.now()), 1000);
     return () => clearInterval(interval);
-  }, [dutyStartedAt, isOnDuty]);
+  }, [loginAt]);
 
   React.useEffect(() => {
     Animated.timing(rowTwoProgress, {
@@ -61,7 +54,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     }).start();
   }, [isScrolled, rowTwoProgress]);
 
-  const elapsedMs = isOnDuty && dutyStartedAt ? Math.max(0, ticker - dutyStartedAt) : 0;
+  const elapsedMs = loginAt ? Math.max(0, ticker - loginAt) : 0;
   const totalSeconds = Math.floor(elapsedMs / 1000);
   const hh = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
   const mm = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
@@ -72,54 +65,53 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
   return (
     <View style={{ backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-      <View style={{ height: 48, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <View style={{ height: 52, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Building2 size={17} color={colors.accent} />
           <Text style={{ marginLeft: 8, fontSize: 13, fontWeight: '800', letterSpacing: 0.3, color: colors.textPrimary }}>SPACE MAKER</Text>
         </View>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', columnGap: 6 }}>
-          <Pressable onPress={toggleTheme} style={{ height: 34, width: 34, alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: colors.subpanel }}>
-            {theme === 'dark' ? <Moon size={16} color={colors.textPrimary} /> : <Sun size={16} color={colors.brassAccent} />}
-          </Pressable>
-
-          <Pressable onPress={onOpenBulletins} style={{ height: 34, width: 34, alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: colors.subpanel }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Pressable
+            onPress={onOpenBulletins}
+            style={{ height: 40, width: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: colors.iconBtnBg, borderWidth: 1, borderColor: colors.iconBtnBorder }}
+          >
             <View>
-              <Bell size={16} color={colors.textPrimary} />
+              <Bell size={17} color={colors.iconBtnText} />
               {unreadBulletinCount > 0 && (
                 <View style={{ position: 'absolute', right: -4, top: -3, height: 9, width: 9, borderRadius: 999, backgroundColor: '#F43F5E' }} />
               )}
             </View>
           </Pressable>
 
-          <Pressable onPress={onOpenAddLead} style={{ height: 34, width: 34, alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: colors.subpanel }}>
-            <Plus size={16} color={colors.accent} />
+          <Pressable
+            onPress={toggleTheme}
+            style={{ height: 40, width: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: colors.iconBtnBg, borderWidth: 1, borderColor: colors.iconBtnBorder }}
+          >
+            {theme === 'dark' ? <Moon size={17} color={colors.iconBtnText} /> : <Sun size={17} color={colors.brassAccent} />}
           </Pressable>
 
-          <Pressable onPress={onOpenStatusSheet ?? onOpenSettings} style={{ minHeight: 30, borderRadius: 999, borderWidth: 1, borderColor: isOnDuty ? colors.success : colors.border, backgroundColor: isOnDuty ? 'rgba(16,185,129,0.12)' : colors.subpanel, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 10, fontWeight: '800', color: isOnDuty ? colors.success : colors.textSecondary }}>
-              {isOnDuty ? '● On Duty' : '○ Off Duty'}
-            </Text>
-          </Pressable>
-
-          <Pressable onPress={onOpenSettings} style={{ height: 34, width: 34, alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: colors.subpanel }}>
-            <Cog size={16} color={colors.textPrimary} />
+          <Pressable
+            onPress={onOpenProfile}
+            style={{ height: 40, width: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: colors.iconBtnBg, borderWidth: 1, borderColor: colors.iconBtnBorder }}
+          >
+            <View>
+              <User size={18} color={colors.iconBtnText} />
+              {isOnDuty && (
+                <View style={{ position: 'absolute', right: -2, bottom: -2, height: 10, width: 10, borderRadius: 999, borderWidth: 2, borderColor: colors.card, backgroundColor: colors.success }} />
+              )}
+            </View>
           </Pressable>
         </View>
       </View>
 
       <Animated.View style={{ height: rowTwoHeight, opacity: rowTwoOpacity, overflow: 'hidden', backgroundColor: colors.subpanel, borderTopWidth: 1, borderTopColor: colors.border }}>
         <View style={{ height: 34, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Text style={{ fontSize: 12, color: colors.textPrimary }}>👤 {agentName}</Text>
-            <View style={{ marginLeft: 8, borderRadius: 999, borderWidth: 1, borderColor: employeeStatus === 'PROBATION' ? colors.warning : colors.success, backgroundColor: colors.card, paddingHorizontal: 7, paddingVertical: 2 }}>
-              <Text style={{ fontSize: 9, fontWeight: '800', color: employeeStatus === 'PROBATION' ? colors.warning : colors.success }}>
-                [{employeeStatus}]
-              </Text>
-            </View>
-          </View>
+          <Text numberOfLines={1} style={{ flex: 1, marginRight: 8, fontSize: 12, color: colors.textPrimary }}>
+            👤 {agentName} • {maskedSim}
+          </Text>
 
-          <Text style={{ fontSize: 11, color: colors.textSecondary }}>
+          <Text style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: '700', color: '#10B981' }}>
             ⏱️ {hh}:{mm}:{ss} • {sessionId}
           </Text>
         </View>

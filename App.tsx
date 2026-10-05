@@ -7,17 +7,16 @@ import { PhoneOff } from 'lucide-react-native';
 
 import { MOCK_AGENT_PHONE } from './src/config/constants';
 import { AddLeadSheet } from './src/features/calling/components/AddLeadSheet';
-import { LeadCard } from './src/features/calling/components/LeadCard';
 import { PostCallDrawer } from './src/features/calling/components/PostCallDrawer';
-import { QueueTracker } from './src/features/calling/components/QueueTracker';
-import { SettingsSheet } from './src/features/calling/components/SettingsSheet';
+import { ProfileDrawer } from './src/features/calling/components/ProfileDrawer';
+import { DialerScreen } from './src/features/calling/screens/DialerScreen';
 import { useAgentConfig } from './src/features/calling/hooks/useAgentConfig';
 import { useCallQueue } from './src/features/calling/hooks/useCallQueue';
 import { useTelephonyBridge } from './src/features/calling/hooks/useTelephonyBridge';
 import type { DispositionSubmission, LeadContact } from './src/features/calling/callingTypes';
 
 import { AppHeader as GlobalAppHeader } from './src/components/navigation/AppHeader';
-import { AgentStatusSheet, type ShiftStatus } from './src/components/navigation/AgentStatusSheet';
+import type { ShiftStatus } from './src/components/navigation/AgentStatusSheet';
 import { BottomTabBar } from './src/components/navigation/BottomTabBar';
 import { ComingSoonScreen } from './src/components/ComingSoonScreen';
 
@@ -28,11 +27,13 @@ import { ApplicationUnderReviewScreen } from './src/features/auth/screens/Applic
 
 import { useShiftStore } from './src/features/shifts/hooks/useShiftStore';
 import { ShiftsScreen } from './src/features/shifts/screens/ShiftsScreen';
+import { AttendanceDetailModal } from './src/features/shifts/components/AttendanceDetailModal';
 
 import { KpiEvaluationScreen } from './src/features/kpi/screens/KpiEvaluationScreen';
 import { UPCOMING_KPI_REVISIONS } from './src/features/kpi/constants/kpiBenchmarks';
 
-import { useUnreadBulletinCount } from './src/features/notices/hooks/useNoticeStore';
+import { useNoticeStore, useUnreadBulletinCount } from './src/features/notices/hooks/useNoticeStore';
+import { MOCK_BULLETINS } from './src/features/notices/constants/mockBulletins';
 import { getEmployeeRoleProfile } from './src/features/auth/constants/employeeProfiles';
 
 import { ThemeProvider, useAppTheme } from './src/theme/ThemeContext';
@@ -45,99 +46,6 @@ import type { AppScreen } from './src/types/navigation';
 import { maskPhoneNumber } from './src/features/calling/utils/maskPhoneNumber';
 
 const queryClient = new QueryClient();
-
-interface DialerScreenProps {
-  activeLeadId: string | null;
-  isConnecting: boolean;
-  onDialLead: (lead: LeadContact) => void;
-}
-
-function DialerScreen({
-  activeLeadId,
-  isConnecting,
-  onDialLead,
-}: DialerScreenProps) {
-  const {
-    currentLead,
-    queueLength,
-    queuePosition,
-    isQueueComplete,
-    recordLeadMessage,
-    dailyTarget,
-    dailyCompletedCount,
-    activeBatchNumber,
-    activeBatchSize,
-    activeBatchCompletedCount,
-    activeBatchLeads,
-    totalBatches,
-  } = useCallQueue();
-  const { colors } = useAppTheme();
-
-  return (
-    <View style={{ flex: 1, backgroundColor: colors.canvas }}>
-      <View style={{ paddingHorizontal: 16, paddingTop: 14 }}>
-        <View style={{ borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 14 }}>
-          <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textPrimary }}>
-            Daily Target: {dailyCompletedCount} / {dailyTarget} Completed • Active Batch: {activeBatchCompletedCount} / {activeBatchSize}
-          </Text>
-          <Text style={{ marginTop: 4, fontSize: 11, color: colors.textSecondary }}>Batch {activeBatchNumber} / {totalBatches} is currently unlocked for action.</Text>
-        </View>
-
-        <View style={{ marginTop: 12, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 12 }}>
-          <Text style={{ fontSize: 11, fontWeight: '800', letterSpacing: 0.8, color: colors.textSecondary }}>5-LEAD ACTIVE BOARD</Text>
-          <View style={{ marginTop: 10, gap: 8 }}>
-            {activeBatchLeads.map((lead) => (
-              <View
-                key={lead.id}
-                style={{
-                  minHeight: 48,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: lead.isActioned ? colors.success : colors.border,
-                  backgroundColor: lead.isActioned ? 'rgba(16,185,129,0.10)' : colors.subpanel,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  justifyContent: 'center',
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <View style={{ flex: 1, marginRight: 10 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textPrimary }}>{lead.name}</Text>
-                    <Text style={{ marginTop: 3, fontSize: 11, color: colors.textSecondary }}>{lead.source}</Text>
-                  </View>
-                  <Text style={{ fontSize: 11, fontWeight: '800', color: lead.isActioned ? colors.success : colors.warning }}>
-                    {lead.isActioned ? 'ACTIONED' : 'PENDING'}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-      </View>
-
-      <ScrollView style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }} contentContainerStyle={{ paddingBottom: 32 }}>
-        <QueueTracker position={queuePosition} total={queueLength} />
-
-        <View style={{ marginTop: 16 }}>
-          {currentLead ? (
-            <LeadCard
-              lead={currentLead}
-              isConnecting={isConnecting && activeLeadId === currentLead.id}
-              onStartCall={() => onDialLead(currentLead)}
-              onRecordMessage={(entry) => recordLeadMessage(currentLead.id, entry)}
-            />
-          ) : (
-            <View style={{ borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 24 }}>
-              <Text style={{ textAlign: 'center', fontSize: 16, color: colors.textSecondary }}>
-                {isQueueComplete ? 'Daily target complete. All 30 leads have been actioned.' : 'Finish the current 5-lead batch to unlock the next board.'}
-              </Text>
-            </View>
-          )}
-        </View>
-      </ScrollView>
-    </View>
-  );
-}
 
 /**
  * Top-level app shell for authenticated + KYC-approved agents: de-cluttered
@@ -160,6 +68,7 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
   const startDutySession = useShiftStore((state) => state.startDutySession);
   const endDutySession = useShiftStore((state) => state.endDutySession);
   const unreadBulletinCount = useUnreadBulletinCount();
+  const acknowledgedBulletinIds = useNoticeStore((state) => state.acknowledgedIds);
   const hasKpiRevisionAlert = UPCOMING_KPI_REVISIONS.some((revision) => revision.role === role);
   const { addLeadToFront, scheduleCallback, completeLeadAction } = useCallQueue();
 
@@ -167,30 +76,25 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
   const roleProfile = getEmployeeRoleProfile(role);
 
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('DASHBOARD');
-  const [isStatusSheetOpen, setIsStatusSheetOpen] = useState(false);
-  const [isSettingsVisible, setIsSettingsVisible] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isBulletinsVisible, setIsBulletinsVisible] = useState(false);
   const [isAddLeadVisible, setIsAddLeadVisible] = useState(false);
-  const [dutyModalMode, setDutyModalMode] = useState<'START' | 'END' | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
   const [dutyFeedback, setDutyFeedback] = useState<string | null>(null);
-  const [pendingDialLead, setPendingDialLead] = useState<{
+  type DialCandidate = {
     source: 'QUEUE' | 'CALLBACK';
     id: string;
     leadName: string;
     maskedPhoneNumber: string;
     rawPhoneNumber?: string;
-  } | null>(null);
-  const [activeDialContext, setActiveDialContext] = useState<{
-    source: 'QUEUE' | 'CALLBACK';
-    id: string;
-    leadName: string;
-    maskedPhoneNumber: string;
-    rawPhoneNumber?: string;
-  } | null>(null);
+  };
+  const [pendingDialLead, setPendingDialLead] = useState<DialCandidate | null>(null);
+  const [offDutyDialRequest, setOffDutyDialRequest] = useState<DialCandidate | null>(null);
+  const [activeDialContext, setActiveDialContext] = useState<DialCandidate | null>(null);
 
   const isShiftLocked = lockStatus === 'PENALIZED' && !!lockedUntil && Date.now() < lockedUntil;
   const isActiveCall = telephonyState.status === 'ACTIVE' && telephonyState.activeMode === 'IPTSP_BRIDGE';
   const isOnDuty = Boolean(activeSessionStartedAt) && !isShiftLocked;
-  const canDial = featureFlags.canUseDialer && (isOnDuty || role === 'FREELANCER_AGENT');
 
   useEffect(() => {
     const visibleTabs = roleProfile.visibleTabs;
@@ -198,6 +102,10 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
     if (currentScreen === 'KPI' || currentScreen === 'SITE_VISITS') return;
     setCurrentScreen('DASHBOARD');
   }, [currentScreen, roleProfile.visibleTabs]);
+
+  useEffect(() => {
+    setIsScrolled(false);
+  }, [currentScreen]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
@@ -216,13 +124,27 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
   };
   const shiftStatus: ShiftStatus = isShiftLocked ? 'LOCKED' : isOnDuty ? 'ON_DUTY' : 'BREAK';
 
-  const handleQueueDial = (lead: LeadContact) => {
-    if (!canDial) {
-      setDutyFeedback(role === 'FREELANCER_AGENT' ? 'Dialer access is not enabled for this employee type.' : 'Start an approved duty session before dialing clients.');
+  const requestDial = (candidate: DialCandidate) => {
+    if (!featureFlags.canUseDialer) {
+      setDutyFeedback('Dialer access is not enabled for this employee type.');
       return;
     }
 
-    setPendingDialLead({
+    if (isOnDuty || role === 'FREELANCER_AGENT') {
+      setPendingDialLead(candidate);
+      return;
+    }
+
+    if (isShiftLocked) {
+      setDutyFeedback('Shift booking is locked due to a late-cancellation penalty. Dialing is unavailable until the lockout clears.');
+      return;
+    }
+
+    setOffDutyDialRequest(candidate);
+  };
+
+  const handleQueueDial = (lead: LeadContact) => {
+    requestDial({
       source: 'QUEUE',
       id: lead.id,
       leadName: lead.name,
@@ -232,18 +154,25 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
   };
 
   const handleCallbackDial = (lead: { id: string; leadName: string; phone: string }) => {
-    if (!canDial) {
-      setDutyFeedback(role === 'FREELANCER_AGENT' ? 'Dialer access is not enabled for this employee type.' : 'Start an approved duty session before dialing clients.');
-      return;
-    }
-
-    setPendingDialLead({
+    requestDial({
       source: 'CALLBACK',
       id: lead.id,
       leadName: lead.leadName,
       maskedPhoneNumber: maskPhoneNumber(lead.phone),
       rawPhoneNumber: lead.phone,
     });
+  };
+
+  const confirmOffDutyDial = () => {
+    if (!offDutyDialRequest) return;
+    const result = startDutySession();
+    if (!result.ok) {
+      setDutyFeedback(result.reason ?? 'Unable to start duty session.');
+      setOffDutyDialRequest(null);
+      return;
+    }
+    setPendingDialLead(offDutyDialRequest);
+    setOffDutyDialRequest(null);
   };
 
   const confirmDialLead = async () => {
@@ -279,48 +208,18 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
     setActiveDialContext(null);
   };
 
-  const handleDutyToggle = () => {
-    setDutyModalMode(isOnDuty ? 'END' : 'START');
-  };
-
-  const confirmDutyToggle = () => {
-    if (dutyModalMode === 'START') {
-      const result = startDutySession();
-      setDutyFeedback(result.ok ? 'Duty session started. The dialer and callback desk are now unlocked.' : result.reason ?? 'Unable to start duty session.');
-    }
-
-    if (dutyModalMode === 'END') {
-      const endedSession = endDutySession();
-      setDutyFeedback(endedSession ? `Duty session closed with ${endedSession.hoursWorked.toFixed(2)} hours logged.` : 'There is no active duty session to close.');
-    }
-
-    setDutyModalMode(null);
-  };
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.canvas }} edges={['top', 'left', 'right']}>
       <DynamicWatermark agentId={agentProfile?.corporateSim ?? 'AGT-01'} />
       <GlobalAppHeader
         agentName={agentProfile?.legalName ?? 'Agent'}
-        employeeStatus={agentProfile?.employeeStatus ?? 'PROBATION'}
+        maskedSim={agentProfile?.corporateSim ?? 'Unassigned SIM'}
         sessionId={agentProfile?.sessionId ?? '#SES-0000'}
         unreadBulletinCount={unreadBulletinCount}
-        dutyStartedAt={activeSessionStartedAt}
-        dutyHoursToday={0}
-        pendingDutyHours={0}
         isOnDuty={isOnDuty}
-        onOpenBulletins={() => setCurrentScreen('DASHBOARD')}
-        onOpenAddLead={() => {
-          if (!featureFlags.canUseDialer) {
-            setDutyFeedback('Custom lead intake is not enabled for this employee type.');
-            return;
-          }
-          setCurrentScreen('DIALER');
-          setIsAddLeadVisible(true);
-        }}
-        onToggleDuty={handleDutyToggle}
-        onOpenSettings={() => setIsSettingsVisible(true)}
-        onOpenStatusSheet={() => setIsStatusSheetOpen(true)}
+        isScrolled={isScrolled}
+        onOpenBulletins={() => setIsBulletinsVisible(true)}
+        onOpenProfile={() => setIsProfileOpen(true)}
       />
 
       {isActiveCall && (
@@ -366,6 +265,7 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
             activeLeadId={telephonyState.activeLeadId}
             isConnecting={telephonyState.status === 'CONNECTING'}
             onDialLead={handleQueueDial}
+            onScrollStateChange={setIsScrolled}
           />
         )}
         {currentScreen === 'KPI' && <KpiEvaluationScreen />}
@@ -373,57 +273,90 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
         {currentScreen === 'CALLBACKS' && (
           <ScheduledCallbacksScreen
             onDialClient={handleCallbackDial}
+            onScrollStateChange={setIsScrolled}
           />
         )}
-        {currentScreen === 'INVENTORY' && <StackingMatrixScreen />}
+        {currentScreen === 'INVENTORY' && <StackingMatrixScreen onScrollStateChange={setIsScrolled} />}
         {currentScreen === 'SITE_VISITS' && <ComingSoonScreen title="Site Visits & GPS Check-In" />}
         {currentScreen === 'WALLET' && <WalletScreen />}
       </View>
 
       <BottomTabBar activeScreen={currentScreen} onNavigate={setCurrentScreen} />
 
-      <AgentStatusSheet
-        visible={isStatusSheetOpen}
-        agentName={agentProfile?.legalName ?? 'Agent'}
-        corporateSim={agentProfile?.corporateSim ?? 'Unassigned SIM'}
-        role={role}
-        shiftStatus={shiftStatus}
-        hasKpiRevisionAlert={hasKpiRevisionAlert}
-        onClose={() => setIsStatusSheetOpen(false)}
-        onNavigateKpi={() => setCurrentScreen('KPI')}
-        onNavigateSiteVisits={() => setCurrentScreen('SITE_VISITS')}
-        onAddSelfSourcedLead={() => {
+      <ProfileDrawer
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        onLogout={onLogout}
+        onOpenAddLead={() => {
+          if (!featureFlags.canUseDialer) {
+            setDutyFeedback('Custom lead intake is not enabled for this employee type.');
+            return;
+          }
           setCurrentScreen('DIALER');
           setIsAddLeadVisible(true);
         }}
-        onOpenSettings={() => setIsSettingsVisible(true)}
-        onLogout={onLogout}
+        onNavigateWallet={() => setCurrentScreen('WALLET')}
       />
 
-      <SettingsSheet
-        visible={isSettingsVisible}
-        agentPhone={agentPhone}
-        callProviderMode={callProviderMode}
-        onClose={() => setIsSettingsVisible(false)}
-        onSave={(nextAgentPhone, nextMode) => {
-          setAgentPhone(nextAgentPhone);
-          setCallProviderMode(nextMode);
-        }}
-        onNavigateWallet={() => {
-          setIsSettingsVisible(false);
-          setCurrentScreen('WALLET');
-        }}
-        onSignOut={() => {
-          setIsSettingsVisible(false);
-          onLogout();
-        }}
-      />
+      <AttendanceDetailModal />
 
       <AddLeadSheet
         visible={isAddLeadVisible}
         onClose={() => setIsAddLeadVisible(false)}
         onAddLead={addLeadToFront}
       />
+
+      <Modal visible={isBulletinsVisible} transparent animationType="slide" onRequestClose={() => setIsBulletinsVisible(false)}>
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <View style={{ maxHeight: '80%', width: '100%', borderTopWidth: 1, borderTopColor: colors.border, borderRadius: 24, backgroundColor: colors.card, padding: 20 }}>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>Head Office Bulletins</Text>
+            <ScrollView style={{ marginTop: 14 }} showsVerticalScrollIndicator={false}>
+              {MOCK_BULLETINS.map((bulletin) => {
+                const isAcknowledged = acknowledgedBulletinIds.includes(bulletin.id);
+                return (
+                  <View
+                    key={bulletin.id}
+                    style={{ marginBottom: 12, borderRadius: 14, borderWidth: 1, borderColor: bulletin.priority === 'HIGH' ? '#F43F5E' : colors.border, backgroundColor: colors.subpanel, padding: 14 }}
+                  >
+                    <Text style={{ fontSize: 14, fontWeight: '800', color: colors.textPrimary }}>{bulletin.title}</Text>
+                    <Text style={{ marginTop: 6, fontSize: 12, lineHeight: 18, color: colors.textSecondary }}>{bulletin.body}</Text>
+                    <Pressable
+                      onPress={() => useNoticeStore.getState().acknowledge(bulletin.id)}
+                      style={{ marginTop: 10, minHeight: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: isAcknowledged ? colors.subpanel : colors.accent, borderWidth: isAcknowledged ? 1 : 0, borderColor: colors.border }}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: isAcknowledged ? colors.textSecondary : '#FFFFFF' }}>
+                        {isAcknowledged ? 'Acknowledged' : 'Mark as Read'}
+                      </Text>
+                    </Pressable>
+                  </View>
+                );
+              })}
+            </ScrollView>
+            <Pressable onPress={() => setIsBulletinsVisible(false)} style={{ marginTop: 10, minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary }}>Close</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={Boolean(offDutyDialRequest)} transparent animationType="fade" onRequestClose={() => setOffDutyDialRequest(null)}>
+        <View style={{ flex: 1, justifyContent: 'center', backgroundColor: 'rgba(15,23,42,0.7)', padding: 20 }}>
+          <View style={{ borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 20 }}>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>You're Off Duty</Text>
+            <Text style={{ marginTop: 10, fontSize: 14, lineHeight: 21, color: colors.textSecondary }}>
+              Start an approved duty session now to dial {offDutyDialRequest?.leadName}, or cancel and go on duty later from your profile.
+            </Text>
+            <View style={{ marginTop: 18, flexDirection: 'row', gap: 10 }}>
+              <Pressable onPress={() => setOffDutyDialRequest(null)} style={{ flex: 1, minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary }}>Cancel</Text>
+              </Pressable>
+              <Pressable onPress={confirmOffDutyDial} style={{ flex: 1, minHeight: 48, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: '#FFFFFF' }}>Turn On Duty &amp; Dial</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={Boolean(pendingDialLead)} transparent animationType="slide" onRequestClose={() => setPendingDialLead(null)}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
@@ -448,29 +381,6 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
             >
               <Text style={{ fontSize: 14, fontWeight: '800', color: '#FFFFFF' }}>Proceed</Text>
             </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal visible={Boolean(dutyModalMode)} transparent animationType="fade" onRequestClose={() => setDutyModalMode(null)}>
-        <View style={{ flex: 1, justifyContent: 'center', backgroundColor: 'rgba(15,23,42,0.7)', padding: 20 }}>
-          <View style={{ borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 20 }}>
-            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>
-              {dutyModalMode === 'START' ? 'Go On Duty?' : 'Go Off Duty?'}
-            </Text>
-            <Text style={{ marginTop: 10, fontSize: 14, lineHeight: 21, color: colors.textSecondary }}>
-              {dutyModalMode === 'START'
-                ? 'Starting duty unlocks the dialer only when you have an approved slot for today.'
-                : 'Ending duty logs your attendance session and moves the header back to off-duty mode.'}
-            </Text>
-            <View style={{ marginTop: 18, flexDirection: 'row', gap: 10 }}>
-              <Pressable onPress={() => setDutyModalMode(null)} style={{ flex: 1, minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary }}>Cancel</Text>
-              </Pressable>
-              <Pressable onPress={confirmDutyToggle} style={{ flex: 1, minHeight: 48, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ fontSize: 14, fontWeight: '800', color: '#FFFFFF' }}>Confirm</Text>
-              </Pressable>
             </View>
           </View>
         </View>

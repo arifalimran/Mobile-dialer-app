@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
-import { CalendarClock, Clock3, Lock, ShieldAlert } from 'lucide-react-native';
+import { CalendarClock, Lock, ShieldAlert } from 'lucide-react-native';
 
 import { useAppTheme } from '../../../theme/ThemeContext';
 import { useAuthStore } from '../../auth/hooks/useAuthStore';
 import { getEmployeeRoleProfile } from '../../auth/constants/employeeProfiles';
 import { useShiftStore } from '../hooks/useShiftStore';
 import { SHIFT_SLOTS } from '../constants/shiftSlots';
-import type { AttendanceSession } from '../shiftTypes';
+import { AttendanceDetailModal } from '../components/AttendanceDetailModal';
 
 function getCurrentMonthDay(): number {
   const today = new Date();
@@ -31,10 +31,9 @@ export function ShiftsScreen() {
   const { colors } = useAppTheme();
   const role = useAuthStore((state) => state.role);
   const roleProfile = getEmployeeRoleProfile(role);
-  const { bookings, lockStatus, lockedUntil, attendanceHistory, activeSessionStartedAt, bookSlot, cancelBooking, clearExpiredLock } = useShiftStore();
+  const { bookings, lockStatus, lockedUntil, attendanceHistory, activeSessionStartedAt, bookSlot, cancelBooking, clearExpiredLock, openAttendanceModal } = useShiftStore();
   const [penaltyModalVisible, setPenaltyModalVisible] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState<{ id: string; slotId: string; dateIso: string } | null>(null);
-  const [attendanceModalVisible, setAttendanceModalVisible] = useState(false);
 
   useEffect(() => {
     clearExpiredLock();
@@ -84,29 +83,30 @@ export function ShiftsScreen() {
     setBookingToCancel(null);
   };
 
-  const recentAttendance = attendanceHistory.slice(0, 6);
-
-  const renderAttendanceRow = (session: AttendanceSession) => (
-    <View key={session.id} style={{ marginTop: 10, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, padding: 12 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textPrimary }}>{session.dateIso}</Text>
-        <Text style={{ fontSize: 11, fontWeight: '800', color: colors.success }}>{session.hoursWorked.toFixed(2)} hrs</Text>
-      </View>
-      <Text style={{ marginTop: 4, fontSize: 12, color: colors.textSecondary }}>
-        Clock in {new Date(session.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        {session.endedAt
-          ? ` • Clock out ${new Date(session.endedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-          : ' • Active'}
-      </Text>
-    </View>
-  );
-
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.canvas }} contentContainerStyle={{ paddingHorizontal: 18, paddingTop: 24, paddingBottom: 36 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <CalendarClock size={22} color={colors.accent} />
         <Text style={{ marginLeft: 8, fontSize: 22, fontWeight: '800', color: colors.textPrimary }}>7-Day Shift Scheduler</Text>
       </View>
+
+      <Pressable
+        onPress={openAttendanceModal}
+        style={{ marginTop: 18, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 16 }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={{ fontSize: 12, fontWeight: '800', letterSpacing: 0.8, color: colors.textSecondary }}>ATTENDANCE LEDGER</Text>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: colors.accent }}>Open Detail</Text>
+        </View>
+        {activeSessionStartedAt ? (
+          <Text style={{ marginTop: 10, fontSize: 13, color: colors.success }}>Duty session live since {new Date(activeSessionStartedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+        ) : (
+          <Text style={{ marginTop: 10, fontSize: 13, color: colors.textSecondary }}>No active duty session right now.</Text>
+        )}
+        <Text style={{ marginTop: 6, fontSize: 12, color: colors.textSecondary }}>
+          {attendanceHistory.length} logged session{attendanceHistory.length === 1 ? '' : 's'} on this device · Tap for the full ledger &amp; demo history.
+        </Text>
+      </Pressable>
 
       <View style={{ marginTop: 18, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 16 }}>
         <Text style={{ fontSize: 12, fontWeight: '800', letterSpacing: 0.8, color: colors.textSecondary }}>MONTHLY KPI TRACKER</Text>
@@ -196,21 +196,6 @@ export function ShiftsScreen() {
         ))}
       </View>
 
-      <View style={{ marginTop: 22, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 16 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Text style={{ fontSize: 12, fontWeight: '800', letterSpacing: 0.8, color: colors.textSecondary }}>ATTENDANCE LEDGER</Text>
-          <Pressable onPress={() => setAttendanceModalVisible(true)}>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: colors.accent }}>Open Detail</Text>
-          </Pressable>
-        </View>
-        {activeSessionStartedAt ? (
-          <Text style={{ marginTop: 10, fontSize: 13, color: colors.success }}>Duty session live since {new Date(activeSessionStartedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
-        ) : (
-          <Text style={{ marginTop: 10, fontSize: 13, color: colors.textSecondary }}>No active duty session right now.</Text>
-        )}
-        {recentAttendance.length > 0 ? recentAttendance.map(renderAttendanceRow) : <Text style={{ marginTop: 10, fontSize: 12, color: colors.textSecondary }}>Clocked sessions will appear here after you end duty from the main header.</Text>}
-      </View>
-
       <Modal visible={penaltyModalVisible} transparent animationType="slide" onRequestClose={() => setPenaltyModalVisible(false)}>
         <View style={{ flex: 1, justifyContent: 'center', backgroundColor: 'rgba(15, 23, 42, 0.68)', padding: 20 }}>
           <View style={{ borderRadius: 20, borderWidth: 1, borderColor: '#F87171', backgroundColor: colors.card, padding: 20 }}>
@@ -239,21 +224,7 @@ export function ShiftsScreen() {
         </View>
       </Modal>
 
-      <Modal visible={attendanceModalVisible} transparent animationType="slide" onRequestClose={() => setAttendanceModalVisible(false)}>
-        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(15,23,42,0.72)' }}>
-          <View style={{ maxHeight: '75%', borderTopLeftRadius: 24, borderTopRightRadius: 24, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.card, padding: 20 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>Attendance Detail</Text>
-              <Pressable onPress={() => setAttendanceModalVisible(false)}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.accent }}>Close</Text>
-              </Pressable>
-            </View>
-            <ScrollView style={{ marginTop: 12 }} showsVerticalScrollIndicator={false}>
-              {attendanceHistory.length > 0 ? attendanceHistory.map(renderAttendanceRow) : <Text style={{ fontSize: 13, color: colors.textSecondary }}>No attendance sessions have been logged yet.</Text>}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      <AttendanceDetailModal />
     </ScrollView>
   );
 }
