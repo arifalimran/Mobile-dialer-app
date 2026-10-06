@@ -266,6 +266,13 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
             isConnecting={telephonyState.status === 'CONNECTING'}
             onDialLead={handleQueueDial}
             onScrollStateChange={setIsScrolled}
+            onOpenAddLead={() => {
+              if (!featureFlags.canUseDialer) {
+                setDutyFeedback('Custom lead intake is not enabled for this employee type.');
+                return;
+              }
+              setIsAddLeadVisible(true);
+            }}
           />
         )}
         {currentScreen === 'KPI' && <KpiEvaluationScreen />}

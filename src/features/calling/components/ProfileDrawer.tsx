@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
 import {
-  Camera,
   ChevronRight,
   Clock3,
   Coffee,
@@ -12,7 +11,6 @@ import {
   Plus,
   Shuffle,
   Tag,
-  User,
   Wallet,
   X,
 } from 'lucide-react-native';
@@ -27,15 +25,8 @@ import { useShiftStore } from '../../shifts/hooks/useShiftStore';
 import { TokenDepositDrawer } from '../../finance/components/TokenDepositDrawer';
 import { KpiGuidelinesModal } from '../../wallet/components/KpiGuidelinesModal';
 
-const BREAK_OPTIONS_MIN = [15, 30, 45, 60, 90, 120];
-
-function formatElapsed(ms: number): string {
-  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${pad(hours)}h ${pad(minutes)}m`;
-}
+const BREAK_OPTIONS_MIN = [15, 30, 60, 120];
+const BREAK_OPTION_LABELS: Record<number, string> = { 15: '15m', 30: '30m', 60: '1h', 120: '2h' };
 
 interface ProfileDrawerProps {
   isOpen: boolean;
@@ -55,6 +46,7 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({ isOpen, onClose, o
   const { colors } = useAppTheme();
   const agentProfile = useAuthStore((state) => state.agentProfile);
   const role = useAuthStore((state) => state.role);
+  const employeeStatus = useAuthStore((state) => state.employeeStatus);
   const switchRole = useAuthStore((state) => state.switchRole);
   const { agentPhone, callProviderMode, setCallProviderMode } = useAgentConfig();
 
@@ -74,7 +66,7 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({ isOpen, onClose, o
 
   const [now, setNow] = useState(Date.now());
   const [dutyFeedback, setDutyFeedback] = useState<string | null>(null);
-  const [isBreakMenuVisible, setIsBreakMenuVisible] = useState(false);
+  const [isBreakOptionsVisible, setIsBreakOptionsVisible] = useState(false);
   const [isOffDutyConfirmVisible, setIsOffDutyConfirmVisible] = useState(false);
   const [isAvatarMenuVisible, setIsAvatarMenuVisible] = useState(false);
   const [isSiteVisitVisible, setIsSiteVisitVisible] = useState(false);
@@ -140,6 +132,15 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({ isOpen, onClose, o
     action();
   };
 
+  const handleSignOut = () => {
+    if (dutyStatus !== 'OFF_DUTY') {
+      endDutySession();
+    }
+    useAuthStore.getState().logout();
+    onClose();
+    onLogout();
+  };
+
   const quickActions = [
     { key: 'add-lead', label: 'Add New Custom Lead', Icon: Plus, onPress: () => handleAction(onOpenAddLead) },
     { key: 'site-visit', label: 'Book Site Visit / Field Inspection', Icon: MapPin, onPress: () => setIsSiteVisitVisible(true) },
@@ -149,139 +150,220 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({ isOpen, onClose, o
     { key: 'brochure', label: 'Send Project Brochure & Price List', Icon: FileText, onPress: () => setIsBrochureVisible(true) },
   ];
 
+  const agentInitial = (agentProfile?.legalName ?? 'Agent').trim().charAt(0).toUpperCase() || 'A';
+
   return (
     <Modal visible={isOpen} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: colors.overlay }}>
           <TouchableWithoutFeedback>
             <View style={{ maxHeight: '88%', borderTopWidth: 1, borderTopColor: colors.border, borderTopLeftRadius: 24, borderTopRightRadius: 24, backgroundColor: colors.card }}>
-              <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>Profile</Text>
-                  <Pressable onPress={onClose} style={{ height: 36, width: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: colors.subpanel }}>
-                    <X size={16} color={colors.textPrimary} />
-                  </Pressable>
-                </View>
+              <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 16 }} showsVerticalScrollIndicator={false}>
+                {/* 1. Agent header (~64px): avatar + name/SIM/probation cluster, close button inline to save a row. */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 }}>
+                    <Pressable
+                      onPress={() => setIsAvatarMenuVisible(true)}
+                      hitSlop={2}
+                      style={{ height: 44, width: 44, borderRadius: 22, backgroundColor: colors.subpanel, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}
+                    >
+                      <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textSecondary }}>{agentInitial}</Text>
+                    </Pressable>
 
-                <View style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center' }}>
-                  <Pressable
-                    onPress={() => setIsAvatarMenuVisible(true)}
-                    style={{ height: 64, width: 64, borderRadius: 32, backgroundColor: colors.subpanel, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}
-                  >
-                    <User size={28} color={colors.textSecondary} />
-                    <View style={{ position: 'absolute', right: -2, bottom: -2, height: 24, width: 24, borderRadius: 999, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.card }}>
-                      <Camera size={12} color="#FFFFFF" />
-                    </View>
-                  </Pressable>
-
-                  <View style={{ marginLeft: 14, flex: 1 }}>
-                    <Text numberOfLines={1} style={{ fontSize: 16, fontWeight: '800', color: colors.textPrimary }}>
-                      {agentProfile?.legalName ?? 'Agent'}
-                    </Text>
-                    <Text selectable={false} style={{ marginTop: 2, fontFamily: 'monospace', fontSize: 12, color: colors.textSecondary }}>
-                      {agentProfile?.corporateSim ?? 'Unassigned SIM'}
-                    </Text>
-                    <View style={{ marginTop: 6, alignSelf: 'flex-start', borderRadius: 999, backgroundColor: statusMeta.bg, paddingHorizontal: 10, paddingVertical: 4 }}>
-                      <Text style={{ fontSize: 11, fontWeight: '800', color: statusMeta.color }}>{statusMeta.label}</Text>
+                    <View style={{ marginLeft: 10, flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text numberOfLines={1} style={{ fontSize: 15, fontWeight: '800', color: colors.textPrimary, flexShrink: 1 }}>
+                          {agentProfile?.legalName ?? 'Agent'}
+                        </Text>
+                        {employeeStatus === 'PROBATION' && (
+                          <View style={{ marginLeft: 6, borderRadius: 999, backgroundColor: 'rgba(245,158,11,0.16)', paddingHorizontal: 6, paddingVertical: 1 }}>
+                            <Text style={{ fontSize: 9, fontWeight: '800', color: colors.warning }}>PROBATION</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text selectable={false} numberOfLines={1} style={{ marginTop: 2, fontFamily: 'monospace', fontSize: 11, color: colors.textSecondary }}>
+                        {agentProfile?.corporateSim ?? 'Unassigned SIM'}
+                      </Text>
                     </View>
                   </View>
+
+                  <Pressable
+                    onPress={onClose}
+                    hitSlop={8}
+                    style={{ height: 32, width: 32, alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: colors.subpanel }}
+                  >
+                    <X size={14} color={colors.textPrimary} />
+                  </Pressable>
                 </View>
 
-                <View style={{ marginTop: 18, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, padding: 14 }}>
-                  <Text style={{ fontSize: 11, fontWeight: '800', letterSpacing: 0.6, color: colors.textSecondary }}>DUTY &amp; BREAK</Text>
-                  <Text style={{ marginTop: 8, fontSize: 13, color: colors.textPrimary }}>Logged today: {formatElapsed(hoursToday * 60 * 60 * 1000)}</Text>
+                {/* 2. Duty & break (~90px worst case, break sub-pills expanded). */}
+                <View style={{ marginTop: 6, padding: 8, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '800', letterSpacing: 0.6, color: colors.textSecondary }}>DUTY &amp; BREAK</Text>
+                    <Text style={{ fontSize: 10, fontWeight: '800', color: statusMeta.color }}>{statusMeta.label}</Text>
+                  </View>
 
                   {isShiftLocked ? (
-                    <Text style={{ marginTop: 10, fontSize: 12, color: colors.danger }}>
-                      Shift booking is locked until {lockedUntil ? new Date(lockedUntil).toLocaleString() : '—'}.
+                    <Text style={{ fontSize: 11, color: colors.danger }}>
+                      Locked until {lockedUntil ? new Date(lockedUntil).toLocaleString() : '—'}.
                     </Text>
                   ) : (
-                    <View style={{ marginTop: 12, flexDirection: 'row', gap: 8 }}>
-                      <Pressable
-                        onPress={handleGoOnDuty}
-                        disabled={dutyStatus === 'ON_DUTY'}
-                        style={{ flex: 1, minHeight: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: dutyStatus === 'ON_DUTY' ? colors.subpanel : colors.success, opacity: dutyStatus === 'ON_DUTY' ? 0.5 : 1 }}
-                      >
-                        <Text style={{ fontSize: 12, fontWeight: '800', color: dutyStatus === 'ON_DUTY' ? colors.textSecondary : '#FFFFFF' }}>On Duty</Text>
-                      </Pressable>
-                      <Pressable
-                        onPress={() => setIsBreakMenuVisible(true)}
-                        disabled={dutyStatus !== 'ON_DUTY'}
-                        style={{ flex: 1, minHeight: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.warning, opacity: dutyStatus !== 'ON_DUTY' ? 0.4 : 1 }}
-                      >
-                        <Text style={{ fontSize: 12, fontWeight: '800', color: '#FFFFFF' }}>Take Break</Text>
-                      </Pressable>
-                      <Pressable
-                        onPress={() => setIsOffDutyConfirmVisible(true)}
-                        disabled={dutyStatus === 'OFF_DUTY'}
-                        style={{ flex: 1, minHeight: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.danger, opacity: dutyStatus === 'OFF_DUTY' ? 0.4 : 1 }}
-                      >
-                        <Text style={{ fontSize: 12, fontWeight: '800', color: '#FFFFFF' }}>Off Duty</Text>
-                      </Pressable>
-                    </View>
+                    <>
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <Pressable
+                          onPress={handleGoOnDuty}
+                          disabled={dutyStatus === 'ON_DUTY'}
+                          hitSlop={7}
+                          style={{
+                            flex: 1,
+                            height: 34,
+                            paddingVertical: 4,
+                            paddingHorizontal: 8,
+                            borderRadius: 999,
+                            borderWidth: 1,
+                            borderColor: dutyStatus === 'ON_DUTY' ? colors.success : colors.border,
+                            backgroundColor: dutyStatus === 'ON_DUTY' ? 'rgba(16,185,129,0.14)' : 'transparent',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            opacity: dutyStatus === 'ON_DUTY' ? 0.6 : 1,
+                          }}
+                        >
+                          <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: '800', color: dutyStatus === 'ON_DUTY' ? colors.success : colors.textPrimary }}>On Duty</Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => setIsBreakOptionsVisible((current) => !current)}
+                          disabled={dutyStatus !== 'ON_DUTY'}
+                          hitSlop={7}
+                          style={{
+                            flex: 1,
+                            height: 34,
+                            paddingVertical: 4,
+                            paddingHorizontal: 8,
+                            borderRadius: 999,
+                            borderWidth: 1,
+                            borderColor: colors.border,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            opacity: dutyStatus !== 'ON_DUTY' ? 0.4 : 1,
+                          }}
+                        >
+                          <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: '800', color: colors.textPrimary }}>Take Break</Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => setIsOffDutyConfirmVisible(true)}
+                          disabled={dutyStatus === 'OFF_DUTY'}
+                          hitSlop={7}
+                          style={{
+                            flex: 1,
+                            height: 34,
+                            paddingVertical: 4,
+                            paddingHorizontal: 8,
+                            borderRadius: 999,
+                            borderWidth: 1,
+                            borderColor: colors.danger,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            opacity: dutyStatus === 'OFF_DUTY' ? 0.4 : 1,
+                          }}
+                        >
+                          <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: '800', color: colors.danger }}>Off Duty</Text>
+                        </Pressable>
+                      </View>
+
+                      {isOnBreak ? (
+                        <View style={{ marginTop: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Coffee size={12} color={colors.warning} />
+                            <Text style={{ marginLeft: 6, fontSize: 11, color: colors.warning }}>{Math.ceil(breakRemainingMs / 60000)}m left on break</Text>
+                          </View>
+                          <Pressable onPress={endBreak} hitSlop={10} style={{ height: 28, paddingVertical: 2, paddingHorizontal: 6, borderRadius: 999, borderWidth: 1, borderColor: colors.warning, alignItems: 'center', justifyContent: 'center' }}>
+                            <Text style={{ fontSize: 10, fontWeight: '800', color: colors.warning }}>End Break</Text>
+                          </Pressable>
+                        </View>
+                      ) : (
+                        isBreakOptionsVisible && (
+                          <View style={{ marginTop: 6, flexDirection: 'row', gap: 6 }}>
+                            {BREAK_OPTIONS_MIN.map((minutes) => (
+                              <Pressable
+                                key={minutes}
+                                onPress={() => {
+                                  startBreak(minutes);
+                                  setIsBreakOptionsVisible(false);
+                                }}
+                                hitSlop={10}
+                                style={{ flex: 1, height: 28, paddingVertical: 2, paddingHorizontal: 6, borderRadius: 999, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}
+                              >
+                                <Text style={{ fontSize: 10, fontWeight: '800', color: colors.textPrimary }}>{BREAK_OPTION_LABELS[minutes]}</Text>
+                              </Pressable>
+                            ))}
+                          </View>
+                        )
+                      )}
+                    </>
                   )}
                 </View>
 
-                <View style={{ marginTop: 20 }}>
-                  <Text style={{ fontSize: 11, fontWeight: '800', letterSpacing: 0.6, color: colors.textSecondary }}>QUICK ACTIONS</Text>
-                  <View style={{ marginTop: 8 }}>
+                {/* 3. Quick actions (~150px): 2-column grid keeps all 6 shortcuts inside the height budget. */}
+                <View style={{ marginTop: 10 }}>
+                  <Text style={{ fontSize: 10, fontWeight: '800', letterSpacing: 0.6, color: colors.textSecondary, marginBottom: 6 }}>QUICK ACTIONS</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
                     {quickActions.map(({ key, label, Icon, onPress }) => (
-                      <Pressable key={key} onPress={onPress} style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Icon size={18} color={colors.textSecondary} />
-                          <Text style={{ marginLeft: 12, fontSize: 14, color: colors.textPrimary }}>{label}</Text>
-                        </View>
-                        <ChevronRight size={16} color={colors.textSecondary} />
+                      <Pressable
+                        key={key}
+                        onPress={onPress}
+                        hitSlop={5}
+                        style={{ width: '48.5%', minHeight: 38, paddingVertical: 7, paddingHorizontal: 8, borderRadius: 8, backgroundColor: colors.subpanel, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center' }}
+                      >
+                        <Icon size={16} color={colors.textSecondary} />
+                        <Text numberOfLines={1} style={{ marginLeft: 8, fontSize: 12, color: colors.textPrimary, flexShrink: 1 }}>{label}</Text>
                       </Pressable>
                     ))}
                   </View>
                 </View>
 
-                <View style={{ marginTop: 20 }}>
-                  <Text style={{ fontSize: 11, fontWeight: '800', letterSpacing: 0.6, color: colors.textSecondary }}>WORKSPACE SETTINGS</Text>
-                  <View style={{ marginTop: 8 }}>
-                    <Pressable onPress={() => setIsRoleModalVisible(true)} style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Shuffle size={18} color={colors.textSecondary} />
-                        <Text style={{ marginLeft: 12, fontSize: 14, color: colors.textPrimary }}>Role Sandbox · {roleProfile.label}</Text>
-                      </View>
-                      <ChevronRight size={16} color={colors.textSecondary} />
-                    </Pressable>
+                {/* 4. Workspace links (~100px for 3 rows: role sandbox, telephony routing, KPI policy). */}
+                <View style={{ marginTop: 10 }}>
+                  <Text style={{ fontSize: 10, fontWeight: '800', letterSpacing: 0.6, color: colors.textSecondary, marginBottom: 2 }}>WORKSPACE</Text>
+                  <Pressable onPress={() => setIsRoleModalVisible(true)} hitSlop={11} style={{ paddingVertical: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Shuffle size={16} color={colors.textSecondary} />
+                      <Text numberOfLines={1} style={{ marginLeft: 10, fontSize: 12, color: colors.textPrimary }}>Role Sandbox · {roleProfile.label}</Text>
+                    </View>
+                    <ChevronRight size={14} color={colors.textSecondary} />
+                  </Pressable>
 
-                    <Pressable onPress={() => setIsTelephonyModalVisible(true)} style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Phone size={18} color={colors.textSecondary} />
-                        <Text style={{ marginLeft: 12, fontSize: 14, color: colors.textPrimary }}>Telephony Line Routing</Text>
-                      </View>
-                      <ChevronRight size={16} color={colors.textSecondary} />
-                    </Pressable>
+                  <Pressable onPress={() => setIsTelephonyModalVisible(true)} hitSlop={11} style={{ paddingVertical: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Phone size={16} color={colors.textSecondary} />
+                      <Text numberOfLines={1} style={{ marginLeft: 10, fontSize: 12, color: colors.textPrimary }}>Telephony Line Routing</Text>
+                    </View>
+                    <ChevronRight size={14} color={colors.textSecondary} />
+                  </Pressable>
 
-                    <Pressable onPress={() => setIsKpiGuidelinesVisible(true)} style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Wallet size={18} color={colors.textSecondary} />
-                        <Text style={{ marginLeft: 12, fontSize: 14, color: colors.textPrimary }}>Monthly KPI &amp; Compensation Policy</Text>
-                      </View>
-                      <ChevronRight size={16} color={colors.textSecondary} />
-                    </Pressable>
-                  </View>
+                  <Pressable onPress={() => setIsKpiGuidelinesVisible(true)} hitSlop={11} style={{ paddingVertical: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Wallet size={16} color={colors.textSecondary} />
+                      <Text numberOfLines={1} style={{ marginLeft: 10, fontSize: 12, color: colors.textPrimary }}>Monthly KPI &amp; Compensation Policy</Text>
+                    </View>
+                    <ChevronRight size={14} color={colors.textSecondary} />
+                  </Pressable>
                 </View>
 
+                {/* 5. Sign out (~48px). */}
                 <Pressable
-                  onPress={() => {
-                    useAuthStore.getState().logout();
-                    onClose();
-                    onLogout();
-                  }}
-                  style={{ marginTop: 24, minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.danger, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
+                  onPress={handleSignOut}
+                  hitSlop={4}
+                  style={{ marginTop: 8, height: 40, borderRadius: 8, backgroundColor: colors.danger, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
                 >
-                  <LogOut size={16} color={colors.danger} />
-                  <Text style={{ marginLeft: 8, fontSize: 14, fontWeight: '800', color: colors.danger }}>Sign Out</Text>
+                  <LogOut size={15} color="#FFFFFF" />
+                  <Text style={{ marginLeft: 8, fontSize: 13, fontWeight: '800', color: '#FFFFFF' }}>Sign Out / Clock Out</Text>
                 </Pressable>
               </ScrollView>
             </View>
           </TouchableWithoutFeedback>
         </View>
       </TouchableWithoutFeedback>
+
 
       {/* Avatar picker stub (no image-picker dependency available in this build) */}
       <Modal visible={isAvatarMenuVisible} transparent animationType="fade" onRequestClose={() => setIsAvatarMenuVisible(false)}>
@@ -297,31 +379,6 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({ isOpen, onClose, o
             <Pressable onPress={() => setIsAvatarMenuVisible(false)} style={{ marginTop: 10, minHeight: 46, alignItems: 'center', justifyContent: 'center' }}>
               <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary }}>Cancel</Text>
             </Pressable>
-          </View>
-        </Pressable>
-      </Modal>
-
-      <Modal visible={isBreakMenuVisible} transparent animationType="fade" onRequestClose={() => setIsBreakMenuVisible(false)}>
-        <Pressable onPress={() => setIsBreakMenuVisible(false)} style={{ flex: 1, justifyContent: 'center', backgroundColor: colors.overlay, padding: 24 }}>
-          <View style={{ borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 16 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Coffee size={18} color={colors.warning} />
-              <Text style={{ marginLeft: 8, fontSize: 15, fontWeight: '800', color: colors.textPrimary }}>Select Break Duration</Text>
-            </View>
-            <View style={{ marginTop: 14, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {BREAK_OPTIONS_MIN.map((minutes) => (
-                <Pressable
-                  key={minutes}
-                  onPress={() => {
-                    startBreak(minutes);
-                    setIsBreakMenuVisible(false);
-                  }}
-                  style={{ minWidth: '30%', minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textPrimary }}>{minutes} min</Text>
-                </Pressable>
-              ))}
-            </View>
           </View>
         </Pressable>
       </Modal>
