@@ -24,6 +24,13 @@ const statusMeta: Record<InventoryStatus, { label: string; color: string; bg: st
   BOOKED: { label: 'Booked', color: '#F87171', bg: 'rgba(248,113,113,0.15)' },
 };
 
+const gridLegendItems: Array<{ label: string; borderColor: string; backgroundColor: string }> = [
+  { label: 'Available', borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.10)' },
+  { label: 'My Hold', borderColor: '#F59E0B', backgroundColor: 'rgba(245,158,11,0.10)' },
+  { label: 'Team Hold', borderColor: '#818CF8', backgroundColor: 'rgba(129,140,248,0.10)' },
+  { label: 'Booked', borderColor: '#F87171', backgroundColor: 'rgba(248,113,113,0.10)' },
+];
+
 function formatPrice(value: number): string {
   return `BDT ${new Intl.NumberFormat('en-BD', { maximumFractionDigits: 0 }).format(value)}`;
 }
@@ -298,20 +305,6 @@ export function StackingMatrixScreen({ onScrollStateChange }: { onScrollStateCha
             </Text>
           </View>
 
-          <View style={{ marginTop: 12, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 12 }}>
-            <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary }}>STATUS LEGEND</Text>
-            <View style={{ marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {Object.entries(statusMeta).map(([status, meta]) => (
-                <View key={status} style={{ borderRadius: 999, borderWidth: 1, borderColor: meta.color, backgroundColor: meta.bg, paddingHorizontal: 10, paddingVertical: 5 }}>
-                  <Text style={{ fontSize: 10, fontWeight: '800', color: meta.color }}>{meta.label}</Text>
-                </View>
-              ))}
-              <View style={{ borderRadius: 999, borderWidth: 1, borderColor: '#A855F7', backgroundColor: 'rgba(168,85,247,0.15)', paddingHorizontal: 10, paddingVertical: 5 }}>
-                <Text style={{ fontSize: 10, fontWeight: '800', color: '#A855F7' }}>Team Hold (Other Agent)</Text>
-              </View>
-            </View>
-          </View>
-
           <View style={{ marginTop: 16, flexDirection: 'row', gap: 8 }}>
             {verticalTabs.map((tab) => {
               const isActive = selectedVertical === tab.value;
@@ -407,6 +400,17 @@ export function StackingMatrixScreen({ onScrollStateChange }: { onScrollStateCha
                 </View>
                 <Text style={{ marginTop: 8, fontSize: 12, color: colors.textSecondary }}>{getVerticalHeader(selectedProject.vertical)}</Text>
                 <Text style={{ marginTop: 6, fontSize: 12, color: colors.textSecondary }}>Search is active across unit codes, titles, and floor labels.</Text>
+
+                <View style={{ marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                  {gridLegendItems.map((item) => (
+                    <View
+                      key={item.label}
+                      style={{ borderRadius: 999, borderWidth: 1, borderColor: item.borderColor, backgroundColor: item.backgroundColor, paddingHorizontal: 8, paddingVertical: 4 }}
+                    >
+                      <Text style={{ fontSize: 11, color: colors.textSecondary }}>{item.label}</Text>
+                    </View>
+                  ))}
+                </View>
 
                 {renderProjectDetail()}
               </View>
