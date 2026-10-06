@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Plus } from 'lucide-react-native';
 
 import { useAppTheme } from '../../../theme/ThemeContext';
 import { LeadCard } from '../components/LeadCard';
-import { QueueTracker } from '../components/QueueTracker';
 import { useCallQueue } from '../hooks/useCallQueue';
 import type { LeadContact } from '../callingTypes';
 
@@ -12,6 +12,7 @@ interface DialerScreenProps {
   isConnecting: boolean;
   onDialLead: (lead: LeadContact) => void;
   onScrollStateChange?: (isScrolled: boolean) => void;
+  onOpenAddLead: () => void;
 }
 
 export const DialerScreen: React.FC<DialerScreenProps> = ({
@@ -19,14 +20,15 @@ export const DialerScreen: React.FC<DialerScreenProps> = ({
   isConnecting,
   onDialLead,
   onScrollStateChange,
+  onOpenAddLead,
 }) => {
   const {
-    queueLength,
-    queuePosition,
     isQueueComplete,
     recordLeadMessage,
     dailyTarget,
     dailyCompletedCount,
+    activeBatchNumber,
+    totalBatches,
     activeBatchLeads,
   } = useCallQueue();
   const { colors } = useAppTheme();
@@ -62,16 +64,21 @@ export const DialerScreen: React.FC<DialerScreenProps> = ({
         }}
         scrollEventThrottle={16}
       >
-        <View style={{ borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, paddingHorizontal: 12, paddingVertical: 9 }}>
-          <View style={{ minHeight: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={{ fontSize: 12, fontWeight: '800', color: colors.textPrimary }}>
-              Target: {dailyTarget} | Done: {dailyCompletedCount} ({completionPercent}%)
-            </Text>
-            <Text style={{ fontSize: 11, color: colors.textSecondary }}>Queue {queuePosition}/{queueLength}</Text>
+        <View style={{ height: 36, paddingHorizontal: 12, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, flexDirection: 'row', alignItems: 'center' }}>
+          <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: '800', color: colors.textPrimary, marginRight: 10 }}>
+            Target: {dailyTarget} | Done: {dailyCompletedCount} ({completionPercent}%) • Batch {activeBatchNumber}/{totalBatches}
+          </Text>
+          <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: colors.border, overflow: 'hidden' }}>
+            <View style={{ width: `${Math.max(0, Math.min(100, completionPercent))}%`, height: '100%', backgroundColor: isQueueComplete ? '#10B981' : colors.brassAccent }} />
           </View>
-          <View style={{ marginTop: 6, height: 6, borderRadius: 3, backgroundColor: colors.subpanel, overflow: 'hidden' }}>
-            <View style={{ width: `${Math.min(100, completionPercent)}%`, height: '100%', backgroundColor: colors.brassAccent }} />
-          </View>
+          <Pressable
+            onPress={onOpenAddLead}
+            hitSlop={8}
+            style={{ marginLeft: 10, height: 24, paddingHorizontal: 8, borderRadius: 999, borderWidth: 1, borderColor: colors.brassAccent, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Plus size={12} color={colors.brassAccent} />
+            <Text style={{ marginLeft: 3, fontSize: 11, fontWeight: '800', color: colors.brassAccent }}>Lead</Text>
+          </Pressable>
         </View>
 
         <View style={{ marginTop: 10, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, paddingHorizontal: 10, paddingVertical: 10 }}>
@@ -126,10 +133,6 @@ export const DialerScreen: React.FC<DialerScreenProps> = ({
               </Text>
             </View>
           )}
-        </View>
-
-        <View style={{ marginTop: 12 }}>
-          <QueueTracker position={queuePosition} total={queueLength} />
         </View>
       </ScrollView>
     </View>

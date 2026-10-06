@@ -160,14 +160,20 @@ export const PostCallDrawer: React.FC<PostCallDrawerProps> = ({
   const seconds = Math.min(15, Math.floor(durationMs / 1000));
 
   return (
-    <Modal visible={visible} transparent animationType="slide">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1, justifyContent: 'flex-end' }}
-      >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={{ borderTopWidth: 1, borderTopColor: colors.border, borderRadius: 24, backgroundColor: colors.card, padding: 20 }}>
-            <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textPrimary }}>Log Call Outcome</Text>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={() => {}}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)' }}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1, justifyContent: 'flex-end' }}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={{ borderTopWidth: 1, borderTopColor: colors.border, borderRadius: 24, backgroundColor: colors.card, padding: 20 }}>
+              <View style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.brassAccent, borderRadius: 8, padding: 10, marginBottom: 12 }}>
+                <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textPrimary }}>
+                  ⚠️ MANDATORY: Select Call Outcome &amp; Complete Debrief Before Next Call
+                </Text>
+              </View>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textPrimary }}>Log Call Outcome</Text>
             <Text style={{ marginTop: 4, fontSize: 14, color: colors.textSecondary }}>
               Select a disposition to advance to the next lead.
             </Text>
@@ -274,6 +280,7 @@ export const PostCallDrawer: React.FC<PostCallDrawerProps> = ({
           </View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 };
