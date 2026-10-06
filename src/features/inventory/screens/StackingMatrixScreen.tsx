@@ -11,6 +11,7 @@ import {
   type InventoryVertical,
 } from '../types';
 import { portfolioHoldQuota, portfolioTotals, portfolioVerticalSummaries } from '../data/portfolioSummary';
+import { InventoryRulesModal } from '../components/InventoryRulesModal';
 
 const verticalTabs: Array<{ label: string; value: InventoryVertical }> = [
   { label: '🏢 Real Estate', value: 'REAL_ESTATE' },
@@ -31,6 +32,33 @@ const gridLegendItems: Array<{ label: string; borderColor: string; backgroundCol
   { label: 'Team Hold', borderColor: '#818CF8', backgroundColor: 'rgba(129,140,248,0.10)' },
   { label: 'Booked', borderColor: '#F87171', backgroundColor: 'rgba(248,113,113,0.10)' },
 ];
+
+const developmentStatusByVertical: Record<
+  InventoryVertical,
+  { emoji: string; label: string; borderColor: string; backgroundColor: string; subText: string }
+> = {
+  REAL_ESTATE: {
+    emoji: '🏗️',
+    label: 'ONGOING CONSTRUCTION',
+    borderColor: '#F59E0B',
+    backgroundColor: 'rgba(245,158,11,0.12)',
+    subText: 'Floor 9 slab casting underway • Handover Dec 2027',
+  },
+  LAND_SHARE: {
+    emoji: '🚜',
+    label: 'UNDER LAND DEVELOPMENT',
+    borderColor: '#10B981',
+    backgroundColor: 'rgba(16,185,129,0.12)',
+    subText: 'Earth filling & boundary demarcation in progress',
+  },
+  INTERIOR: {
+    emoji: '🛋️',
+    label: 'READY / INTERIOR EXECUTION',
+    borderColor: '#818CF8',
+    backgroundColor: 'rgba(129,140,248,0.12)',
+    subText: 'Ready for custom layout selection & furniture fit-outs',
+  },
+};
 
 function formatPrice(value: number): string {
   return `BDT ${new Intl.NumberFormat('en-BD', { maximumFractionDigits: 0 }).format(value)}`;
@@ -73,6 +101,7 @@ export function StackingMatrixScreen({ onScrollStateChange }: { onScrollStateCha
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [projects, setProjects] = useState<InventoryProject[]>(inventoryProjects);
+  const [isRulesModalVisible, setIsRulesModalVisible] = useState(false);
 
   const visibleProjects = useMemo(
     () =>
@@ -354,9 +383,31 @@ export function StackingMatrixScreen({ onScrollStateChange }: { onScrollStateCha
 
           {!selectedProject ? (
             <View style={{ marginTop: 18 }}>
+              <Pressable
+                onPress={() => setIsRulesModalVisible(true)}
+                style={{
+                  marginBottom: 12,
+                  minHeight: 48,
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.card,
+                  paddingHorizontal: 14,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Text style={{ flex: 1, marginRight: 8, fontSize: 11, fontWeight: '700', color: colors.textPrimary }} numberOfLines={2}>
+                  ℹ️ Booking Rules: Quota 3 Holds • 72h Lock • HO Approval Required
+                </Text>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: colors.brassAccent }}>View &gt;</Text>
+              </Pressable>
+
               {visibleProjects.map((project) => {
                 const counts = getProjectCounts(project.units);
                 const total = project.units.length;
+                const developmentStatus = developmentStatusByVertical[project.vertical];
 
                 return (
                   <Pressable
@@ -374,6 +425,24 @@ export function StackingMatrixScreen({ onScrollStateChange }: { onScrollStateCha
                     <Text style={{ fontSize: 16, fontWeight: '800', color: colors.textPrimary }}>{project.name}</Text>
                     <Text style={{ marginTop: 4, fontSize: 11, color: colors.textSecondary }}>{project.location}</Text>
                     <Text style={{ marginTop: 8, fontSize: 12, color: colors.textSecondary }}>{getVerticalHeader(project.vertical)}</Text>
+
+                    <View
+                      style={{
+                        marginTop: 10,
+                        alignSelf: 'flex-start',
+                        borderRadius: 999,
+                        borderWidth: 1,
+                        borderColor: developmentStatus.borderColor,
+                        backgroundColor: developmentStatus.backgroundColor,
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                      }}
+                    >
+                      <Text style={{ fontSize: 10, fontWeight: '800', color: developmentStatus.borderColor }}>
+                        {developmentStatus.emoji} {developmentStatus.label}
+                      </Text>
+                    </View>
+                    <Text style={{ marginTop: 6, fontSize: 11, color: colors.textSecondary }}>{developmentStatus.subText}</Text>
 
                     <View style={{ marginTop: 14, height: 8, borderRadius: 999, overflow: 'hidden', backgroundColor: colors.subpanel, flexDirection: 'row' }}>
                       <View style={{ flex: total === 0 ? 0 : counts.available / total, backgroundColor: colors.success }} />
@@ -542,6 +611,8 @@ export function StackingMatrixScreen({ onScrollStateChange }: { onScrollStateCha
           </Pressable>
         )}
       </Modal>
+
+      <InventoryRulesModal visible={isRulesModalVisible} onClose={() => setIsRulesModalVisible(false)} />
     </View>
   );
 }
