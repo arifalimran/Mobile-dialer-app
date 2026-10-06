@@ -16,7 +16,6 @@ import { useTelephonyBridge } from './src/features/calling/hooks/useTelephonyBri
 import type { DispositionSubmission, LeadContact } from './src/features/calling/callingTypes';
 
 import { AppHeader as GlobalAppHeader } from './src/components/navigation/AppHeader';
-import type { ShiftStatus } from './src/components/navigation/AgentStatusSheet';
 import { BottomTabBar } from './src/components/navigation/BottomTabBar';
 import { ComingSoonScreen } from './src/components/ComingSoonScreen';
 
@@ -122,7 +121,6 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
     const remainingSeconds = (seconds % 60).toString().padStart(2, '0');
     return `${minutes}:${remainingSeconds}`;
   };
-  const shiftStatus: ShiftStatus = isShiftLocked ? 'LOCKED' : isOnDuty ? 'ON_DUTY' : 'BREAK';
 
   const requestDial = (candidate: DialCandidate) => {
     if (!featureFlags.canUseDialer) {
@@ -253,11 +251,16 @@ function AppShell({ onLogout }: { onLogout: () => void }) {
           <DashboardScreen
             agentName={agentProfile?.legalName ?? 'Agent'}
             corporateSim={agentProfile?.corporateSim ?? 'Unassigned SIM'}
-            shiftStatus={shiftStatus}
-            onNavigateDialer={() => setCurrentScreen('DIALER')}
-            onNavigateCallbacks={() => setCurrentScreen('CALLBACKS')}
-            onNavigateInventory={() => setCurrentScreen('INVENTORY')}
-            onNavigateWallet={() => setCurrentScreen('WALLET')}
+            tierLabel={roleProfile.tierLabel}
+            employeeStatus={agentProfile?.employeeStatus ?? roleProfile.defaultStatus}
+            onNavigate={setCurrentScreen}
+            onOpenAddLead={() => {
+              if (!featureFlags.canUseDialer) {
+                setDutyFeedback('Custom lead intake is not enabled for this employee type.');
+                return;
+              }
+              setIsAddLeadVisible(true);
+            }}
           />
         )}
         {currentScreen === 'DIALER' && (
