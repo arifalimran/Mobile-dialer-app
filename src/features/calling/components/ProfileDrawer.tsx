@@ -25,6 +25,7 @@ import { useAgentConfig } from '../hooks/useAgentConfig';
 import type { CallProviderMode } from '../callingTypes';
 import { useShiftStore } from '../../shifts/hooks/useShiftStore';
 import { TokenDepositDrawer } from '../../finance/components/TokenDepositDrawer';
+import { KpiGuidelinesModal } from '../../wallet/components/KpiGuidelinesModal';
 
 const BREAK_OPTIONS_MIN = [15, 30, 45, 60, 90, 120];
 
@@ -84,6 +85,7 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({ isOpen, onClose, o
   const [isBrochureVisible, setIsBrochureVisible] = useState(false);
   const [isRoleModalVisible, setIsRoleModalVisible] = useState(false);
   const [isTelephonyModalVisible, setIsTelephonyModalVisible] = useState(false);
+  const [isKpiGuidelinesVisible, setIsKpiGuidelinesVisible] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -122,7 +124,9 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({ isOpen, onClose, o
     const result = startDutySession();
     if (!result.ok) {
       setDutyFeedback(result.reason ?? 'Unable to start duty session.');
+      return;
     }
+    onClose();
   };
 
   const confirmOffDuty = () => {
@@ -252,7 +256,7 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({ isOpen, onClose, o
                       <ChevronRight size={16} color={colors.textSecondary} />
                     </Pressable>
 
-                    <Pressable onPress={() => handleAction(onNavigateWallet)} style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 }}>
+                    <Pressable onPress={() => setIsKpiGuidelinesVisible(true)} style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <Wallet size={18} color={colors.textSecondary} />
                         <Text style={{ marginLeft: 12, fontSize: 14, color: colors.textPrimary }}>Monthly KPI &amp; Compensation Policy</Text>
@@ -325,9 +329,9 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({ isOpen, onClose, o
       <Modal visible={isOffDutyConfirmVisible} transparent animationType="fade" onRequestClose={() => setIsOffDutyConfirmVisible(false)}>
         <View style={{ flex: 1, justifyContent: 'center', backgroundColor: colors.overlay, padding: 24 }}>
           <View style={{ borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 18 }}>
-            <Text style={{ fontSize: 16, fontWeight: '800', color: colors.textPrimary }}>End your shift?</Text>
+            <Text style={{ fontSize: 16, fontWeight: '800', color: colors.textPrimary }}>End active shift?</Text>
             <Text style={{ marginTop: 8, fontSize: 13, color: colors.textSecondary }}>
-              You have logged {formatElapsed(hoursToday * 60 * 60 * 1000)} today. Monthly progress: {monthlyHoursCompleted.toFixed(1)} / {roleProfile.monthlyTargetHours.toFixed(1)} hrs.
+              You have logged {hoursToday.toFixed(1)} hours. Monthly progress: {monthlyHoursCompleted.toFixed(1)} / {roleProfile.monthlyTargetHours.toFixed(1)} hrs.
             </Text>
             <View style={{ marginTop: 16, flexDirection: 'row', gap: 10 }}>
               <Pressable onPress={() => setIsOffDutyConfirmVisible(false)} style={{ flex: 1, minHeight: 46, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}>
@@ -410,6 +414,12 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({ isOpen, onClose, o
       </Modal>
 
       <TokenDepositDrawer visible={isTokenDepositVisible} onClose={() => setIsTokenDepositVisible(false)} onSubmit={() => setIsTokenDepositVisible(false)} />
+
+      <KpiGuidelinesModal
+        visible={isKpiGuidelinesVisible}
+        onClose={() => setIsKpiGuidelinesVisible(false)}
+        onNavigateWallet={() => handleAction(onNavigateWallet)}
+      />
 
       <Modal visible={isBrochureVisible} transparent animationType="fade" onRequestClose={() => setIsBrochureVisible(false)}>
         <View style={{ flex: 1, justifyContent: 'center', backgroundColor: colors.overlay, padding: 24 }}>

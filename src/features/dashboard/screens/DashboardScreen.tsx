@@ -3,11 +3,9 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { ArrowRight, CalendarClock, ChartNoAxesColumn, Phone, Wallet, Warehouse } from 'lucide-react-native';
 
 import { useAppTheme } from '../../../theme/ThemeContext';
-import { getEmployeeRoleProfile } from '../../auth/constants/employeeProfiles';
-import { useAuthStore } from '../../auth/hooks/useAuthStore';
 import { useCallQueue } from '../../calling/hooks/useCallQueue';
 import { MOCK_CALLBACKS } from '../../callbacks/constants/mockCallbacks';
-import { evaluateSalaryGate, getSampleMonthlySalaryGate } from '../../wallet/utils/kpiEngine';
+import { KPI_TASKS, PASS_MARK_POINTS, calculateSummary } from '../../wallet/utils/calculator';
 import type { ShiftStatus } from '../../../components/navigation/AgentStatusSheet';
 
 interface DashboardScreenProps {
@@ -54,15 +52,7 @@ export function DashboardScreen({
   onNavigateWallet,
 }: DashboardScreenProps) {
   const { colors } = useAppTheme();
-  const role = useAuthStore((state) => state.role);
-  const roleProfile = getEmployeeRoleProfile(role);
-  const {
-    dailyCompletedCount,
-    dailyTarget,
-    activeBatchNumber,
-    activeBatchCompletedCount,
-    totalBatches,
-  } = useCallQueue();
+  const { dailyCompletedCount, dailyTarget } = useCallQueue();
 
   const callbackSummary = useMemo(() => {
     const dueToday = MOCK_CALLBACKS.filter((callback) => callback.status === 'TODAY').length;
@@ -70,12 +60,12 @@ export function DashboardScreen({
     return { dueToday, overdue };
   }, []);
 
-  const sample = getSampleMonthlySalaryGate(role);
-  const workHours = sample.workHoursLogged;
-  const gate = evaluateSalaryGate(sample, role);
+  const summary = useMemo(() => calculateSummary(), []);
+  const workHoursTask = KPI_TASKS.find((task) => task.id === 'work_hours');
+  const workHoursCurrent = workHoursTask?.current ?? 0;
+  const workHoursTarget = Math.max(1, workHoursTask?.target ?? 1);
   const shiftBadge = getShiftBadge(shiftStatus);
-  const monthlyHourTarget = Math.max(1, roleProfile.monthlyTargetHours || 1);
-  const hoursProgress = Math.min(100, (workHours / monthlyHourTarget) * 100);
+  const hoursProgress = Math.min(100, (workHoursCurrent / workHoursTarget) * 100);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.canvas }}>
@@ -93,54 +83,49 @@ export function DashboardScreen({
         </View>
 
         <View style={{ marginTop: 18, gap: 12 }}>
-          <View style={{ borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 16 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Phone size={18} color={colors.accent} />
-                <Text style={{ marginLeft: 8, fontSize: 15, fontWeight: '800', color: colors.textPrimary }}>Daily Lead Dials</Text>
-              </View>
-              <Text style={{ fontSize: 13, fontWeight: '800', color: colors.brassAccent }}>{dailyCompletedCount} / {dailyTarget} Leads Dialed</Text>
+          <View style={{ borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Phone size={18} color={colors.accent} />
+              <Text style={{ marginLeft: 8, fontSize: 15, fontWeight: '800', color: colors.textPrimary }}>Daily Calls</Text>
             </View>
-            <Text style={{ marginTop: 8, fontSize: 12, color: colors.textSecondary }}>Batch {activeBatchNumber} / {totalBatches} • {activeBatchCompletedCount} / 5 completed</Text>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: colors.brassAccent }}>{dailyCompletedCount} / {dailyTarget} Leads Dialed</Text>
           </View>
 
-          <View style={{ borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 16 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={{ flex: 1, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 16 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <CalendarClock size={18} color={colors.warning} />
-                <Text style={{ marginLeft: 8, fontSize: 15, fontWeight: '800', color: colors.textPrimary }}>Scheduled Callbacks</Text>
+                <Text style={{ marginLeft: 8, fontSize: 13, fontWeight: '800', color: colors.textPrimary, flexShrink: 1 }}>Scheduled Callbacks</Text>
               </View>
-              <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textPrimary }}>{callbackSummary.dueToday} Due Today</Text>
+              <Text style={{ marginTop: 10, fontSize: 12, fontWeight: '700', color: colors.textSecondary }}>
+                {callbackSummary.dueToday} Due Today • <Text style={{ color: colors.danger }}>{callbackSummary.overdue} Overdue</Text>
+              </Text>
             </View>
-            <Text style={{ marginTop: 8, fontSize: 12, color: colors.danger }}>{callbackSummary.overdue} Overdue</Text>
-          </View>
 
-          <View style={{ borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 16 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 16 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <ChartNoAxesColumn size={18} color={colors.success} />
-                <Text style={{ marginLeft: 8, fontSize: 15, fontWeight: '800', color: colors.textPrimary }}>Monthly Work Hours</Text>
+                <Text style={{ marginLeft: 8, fontSize: 13, fontWeight: '800', color: colors.textPrimary, flexShrink: 1 }}>Monthly Work Hours</Text>
               </View>
-              <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textPrimary }}>{workHours.toFixed(1)} / {monthlyHourTarget.toFixed(1)} hrs</Text>
-            </View>
-            <View style={{ marginTop: 10, height: 10, borderRadius: 999, overflow: 'hidden', backgroundColor: colors.subpanel }}>
-              <View style={{ height: '100%', width: `${hoursProgress}%`, backgroundColor: colors.success }} />
+              <Text style={{ marginTop: 10, fontSize: 12, fontWeight: '700', color: colors.textSecondary }}>{workHoursCurrent.toFixed(1)} / {workHoursTarget.toFixed(1)} hrs</Text>
+              <View style={{ marginTop: 8, height: 8, borderRadius: 999, overflow: 'hidden', backgroundColor: colors.subpanel }}>
+                <View style={{ height: '100%', width: `${hoursProgress}%`, backgroundColor: colors.success }} />
+              </View>
             </View>
           </View>
 
-          <View style={{ borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 16 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Wallet size={18} color={colors.brassAccent} />
-                <Text style={{ marginLeft: 8, fontSize: 15, fontWeight: '800', color: colors.textPrimary }}>Weighted Compensation Gate</Text>
-              </View>
-              <Text style={{ fontSize: 13, fontWeight: '800', color: gate.isUnlocked ? colors.success : colors.warning }}>{gate.weightedScore.toFixed(1)} / 100 Score</Text>
+          <View style={{ borderRadius: 18, borderWidth: 1, borderColor: summary.isBaseUnlocked ? colors.success : colors.warning, backgroundColor: summary.isBaseUnlocked ? 'rgba(16,185,129,0.14)' : 'rgba(245,158,11,0.14)', padding: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Wallet size={18} color={summary.isBaseUnlocked ? colors.success : colors.warning} />
+              <Text style={{ marginLeft: 8, fontSize: 14, fontWeight: '800', color: colors.textPrimary, flexShrink: 1 }}>
+                {summary.isBaseUnlocked ? '🟢 Base Salary Unlocked' : '🟡 Base Salary Locked'} (Score: {summary.totalScore} / {PASS_MARK_POINTS} Points)
+              </Text>
             </View>
             <Pressable
               onPress={onNavigateWallet}
               style={{ marginTop: 12, minHeight: 48, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }}
             >
-              <Text style={{ fontSize: 14, fontWeight: '800', color: '#FFFFFF' }}>Open Wallet Gate</Text>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: '#FFFFFF' }}>View Requirements</Text>
               <ArrowRight size={16} color="#FFFFFF" style={{ marginLeft: 8 }} />
             </Pressable>
           </View>

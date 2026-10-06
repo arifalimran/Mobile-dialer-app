@@ -126,15 +126,14 @@ export const useShiftStore = create<ShiftState>((set, get) => ({
   },
 
   startDutySession: () => {
-    const { activeSessionStartedAt, bookings } = get();
+    const { activeSessionStartedAt } = get();
     if (activeSessionStartedAt) {
       return { ok: false, reason: 'You are already on duty.' };
     }
-    const approvedBooking = getApprovedBookingForToday(bookings);
-    if (!approvedBooking) {
-      return { ok: false, reason: 'Dialer duty unlocks only during approved shift slots.' };
-    }
 
+    // Shift-slot approval is not required to go on duty — agents can start
+    // a session at any time so dialing/testing is never blocked by the
+    // (currently mock) shift booking backend.
     set({
       activeSessionStartedAt: Date.now(),
       isOnBreak: false,

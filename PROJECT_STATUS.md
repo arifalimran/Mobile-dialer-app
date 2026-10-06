@@ -1,6 +1,6 @@
 # Space Maker Limited — Mobile Dialer: Project Status
 
-**Last updated:** 3 October 2026
+**Last updated:** 6 October 2026
 **Purpose:** Handoff snapshot for another AI session. Read this before changing code. The product/regulatory spec is [.github/copilot-instructions.md](.github/copilot-instructions.md).
 
 ---
@@ -55,6 +55,10 @@ There is also an **Enter demo desk** button that skips the typed fields and open
 | Agent KYC registration | Verified working. The form is usable, DOB date picker opens, and submission returns to the login screen |
 | Registration auto-sign-in | Fixed. Successful registration does not open the app automatically |
 | Post-login crash pattern | Fixed by delaying route transition after keyboard dismissal and guarding native mount-time audio logic |
+| Deterministic KPI/earnings engine (`src/features/wallet/utils/calculator.ts`) | Done. Single source of truth for the 8 monthly tasks, pass mark, base salary gate, and payout math |
+| Wallet screen compact redesign | Done. Collapsible task-score and earnings-breakdown sections, masked identity row, policy banner link |
+| Dashboard synced to the same KPI engine | Done. Locked-score banner + "View Requirements" replaces the old separate weighted-gate card |
+| Mock shift lockout blocking "On Duty" | Fixed. `startDutySession()` no longer requires an approved booking slot |
 
 This is not an Expo SDK or macOS version mismatch. The app bundles and runs on Expo SDK 57 / Expo Go. The earlier login crash was caused by app-state/UI timing and native mount lifecycle issues, not by an SDK incompatibility.
 
@@ -115,6 +119,13 @@ Tabs are a `useState<AppScreen>` switch, not a navigator. Screens: Dialer, Bulle
 - `src/features/kpi/` — role benchmark screens
 - `src/theme/` — dark tokens and app palette
 
+### Wallet / KPI engine — `src/features/wallet/`
+
+- `utils/calculator.ts` — the single source of truth for KPI/earnings math, written to mirror the future ERP backend exactly. Exports `KPI_TASKS` (8 monthly tasks: booking deal, work hours, callbacks, new leads, site visits, installments, voice notes, active days), the pass mark (`PASS_MARK_POINTS = 75`), fixed allowances (`FIXED_BASE_SALARY`, `MOBILE_BILL`, `SITE_VISIT_ALLOWANCE`, `DAILY_ALLOWANCE_RATE`, `COMMISSION_RATE`), and `calculateSummary()` which returns the rounded score, unlock state, and cleared/under-verification payout totals.
+- `components/KpiGuidelinesModal.tsx` — plain-English policy explainer (task list + payout breakdown), opened from both the Profile Drawer and the Wallet screen's policy banner.
+- `screens/WalletScreen.tsx` — rebuilt as a compact screen: masked identity row (level badge, probation badge, masked phone), a hero money card (cleared payout vs. under-verification), a base-salary lock card with a progress bar, a policy banner link, and two sections that are collapsed by default — 8 daily task scores (🔴/🟢, tap for `Alert` rule) and the earnings breakdown ledger.
+- `screens/DashboardScreen.tsx` now reads `calculateSummary()` / `KPI_TASKS` from the same engine (replacing the old `kpiEngine.ts` sample data for this screen) so the dashboard's locked-score banner and work-hours card always match the Wallet screen. The old `kpiEngine.ts` file is untouched and still used by `KpiEvaluationScreen.tsx` / `SettingsSheet.tsx`.
+
 ---
 
 ## 6. Verified implementation notes
@@ -141,6 +152,10 @@ Verified working:
 ### Compliance / notice modal
 
 The mandatory notice modal was adjusted to avoid presenting a modal while the app route was still settling, and it no longer relies on the deprecated `InteractionManager` warning path.
+
+### Duty lockout fix
+
+`useShiftStore.startDutySession()` previously required an approved shift-slot booking for the current day before an agent could go "On Duty". No booking-seeding/approval flow exists in this mock build, so the check always failed and the On Duty button was permanently blocked ("Dialer duty unlocks only during approved shift slots"). The approval requirement was removed; the function now only guards against double-starting a session. This also unblocks the off-duty dial-confirmation flow in `App.tsx`.
 
 ---
 
@@ -199,3 +214,23 @@ The app is now in the following confirmed state:
 - the app remains a front-end-only mock, with a clear path to a server-backed auth and admin system later
 
 The next engineering step is to add the backend auth and lead APIs, then wire the current local mock flows to real server contracts without exposing raw customer numbers.
+
+---
+
+## 11. Current git status (6 October 2026)
+
+Branch: `fix/theme-all-tabs` (up to date with `origin/fix/theme-all-tabs`).
+
+**Modified (not staged):**
+
+- `src/features/calling/components/ProfileDrawer.tsx` — duty/break handling tweaks tied to the lockout fix
+- `src/features/dashboard/screens/DashboardScreen.tsx` — synced to the `calculator.ts` KPI engine, compact HUD cards
+- `src/features/shifts/hooks/useShiftStore.ts` — removed the approved-booking requirement from `startDutySession()`
+- `src/features/wallet/screens/WalletScreen.tsx` — full compact redesign
+
+**Untracked (new files):**
+
+- `src/features/wallet/components/` (includes `KpiGuidelinesModal.tsx`)
+- `src/features/wallet/utils/calculator.ts`
+
+`npx tsc --noEmit` is clean (exit code 0) as of this update. None of the above has been committed yet.
