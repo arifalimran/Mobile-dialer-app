@@ -10,6 +10,7 @@ import {
   type InventoryUnit,
   type InventoryVertical,
 } from '../types';
+import { portfolioHoldQuota, portfolioTotals, portfolioVerticalSummaries } from '../data/portfolioSummary';
 
 const verticalTabs: Array<{ label: string; value: InventoryVertical }> = [
   { label: '🏢 Real Estate', value: 'REAL_ESTATE' },
@@ -113,32 +114,6 @@ export function StackingMatrixScreen({ onScrollStateChange }: { onScrollStateCha
       );
     });
   }, [searchTerm, selectedProject]);
-
-  const portfolioStats = useMemo(() => {
-    const allUnits = projects.flatMap((project) => project.units);
-    const counts = getProjectCounts(allUnits);
-    const total = Math.max(1, allUnits.length);
-    const byVertical = {
-      realEstate: projects.filter((project) => project.vertical === 'REAL_ESTATE').flatMap((project) => project.units).length,
-      landShare: projects.filter((project) => project.vertical === 'LAND_SHARE').flatMap((project) => project.units).length,
-      interior: projects.filter((project) => project.vertical === 'INTERIOR').flatMap((project) => project.units).length,
-    };
-    const myHolds = allUnits.filter(
-      (unit) => (unit.status === 'PENDING_APPROVAL' || unit.status === 'LOCKED') && unit.holdOwner === 'ME',
-    ).length;
-
-    return {
-      total: allUnits.length,
-      available: counts.available,
-      pending: counts.pending,
-      locked: counts.locked,
-      booked: counts.booked,
-      holdRatio: Math.round(((counts.pending + counts.locked) / total) * 100),
-      byVertical,
-      myHolds,
-      totalHolds: counts.pending + counts.locked,
-    };
-  }, [projects]);
 
   const updateUnit = (updater: (unit: InventoryUnit) => InventoryUnit) => {
     if (!selectedProject || !selectedUnit) return;
@@ -292,17 +267,60 @@ export function StackingMatrixScreen({ onScrollStateChange }: { onScrollStateCha
             style={{ marginTop: 14, minHeight: 48, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, paddingHorizontal: 16, color: colors.textPrimary }}
           />
 
-          <View style={{ marginTop: 14, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 16 }}>
-            <Text style={{ fontSize: 12, fontWeight: '800', letterSpacing: 0.8, color: colors.textSecondary }}>PORTFOLIO SNAPSHOT</Text>
-            <Text style={{ marginTop: 10, fontSize: 13, color: colors.textPrimary }}>
-              RealEstate: {portfolioStats.byVertical.realEstate} | Land: {portfolioStats.byVertical.landShare} | Interior: {portfolioStats.byVertical.interior}
-            </Text>
-            <Text style={{ marginTop: 6, fontSize: 13, color: colors.textPrimary }}>
-              My Holds: {portfolioStats.myHolds} | Total Holds: {portfolioStats.totalHolds}
-            </Text>
-            <Text style={{ marginTop: 10, fontSize: 12, color: colors.textSecondary }}>
-              Available {portfolioStats.available} • Pending approval {portfolioStats.pending} • Approved holds {portfolioStats.locked}
-            </Text>
+          <View
+            style={{
+              marginTop: 14,
+              marginBottom: 12,
+              backgroundColor: colors.card,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: 12,
+              padding: 14,
+              shadowColor: '#000',
+              shadowOpacity: 0.08,
+              shadowRadius: 6,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 2,
+            }}
+          >
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', rowGap: 4 }}>
+              <Text style={{ fontSize: 11, fontWeight: '800', letterSpacing: 0.8, color: colors.brassAccent, textTransform: 'uppercase' }}>
+                Portfolio Overview
+              </Text>
+              <Text style={{ fontSize: 10, fontWeight: '700', color: colors.textSecondary, flexShrink: 1, textAlign: 'right' }}>
+                {portfolioTotals.totalUnits} Active Units/Plots • {portfolioTotals.developmentsCount} Developments
+              </Text>
+            </View>
+
+            <View style={{ marginTop: 12, flexDirection: 'row' }}>
+              {portfolioVerticalSummaries.map((item) => (
+                <View key={item.key} style={{ flex: 1, paddingHorizontal: 4 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: colors.textPrimary }}>
+                    {item.emoji} {item.label}
+                  </Text>
+                  <Text style={{ marginTop: 4, fontSize: 10, color: colors.textSecondary }}>{item.projectName}</Text>
+                  <Text style={{ marginTop: 4, fontSize: 10, fontWeight: '700', color: colors.textPrimary }}>
+                    {item.totalCount} {item.unitLabel}
+                  </Text>
+                  <Text style={{ marginTop: 2, fontSize: 10, color: colors.textSecondary }}>
+                    {item.available} Open{item.hold > 0 ? ` / ${item.hold} Hold` : ''} / {item.sold} {item.soldLabel}
+                  </Text>
+                </View>
+              ))}
+            </View>
+
+            <View style={{ height: 6, borderRadius: 3, marginVertical: 10, overflow: 'hidden', flexDirection: 'row', backgroundColor: colors.subpanel }}>
+              <View style={{ flex: portfolioTotals.available, backgroundColor: '#10B981' }} />
+              <View style={{ flex: portfolioTotals.hold, minWidth: 3, backgroundColor: '#F59E0B' }} />
+              <View style={{ flex: portfolioTotals.sold, backgroundColor: '#F87171' }} />
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 11, color: colors.textSecondary }}>
+                My Active Holds: {portfolioHoldQuota.activeHolds} / {portfolioHoldQuota.quota} Quota
+              </Text>
+              <Text style={{ fontSize: 11, color: '#10B981' }}>Live Master Sync: 🟢 Online</Text>
+            </View>
           </View>
 
           <View style={{ marginTop: 16, flexDirection: 'row', gap: 8 }}>
