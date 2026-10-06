@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Animated,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -90,23 +91,13 @@ export const PostCallDrawer: React.FC<PostCallDrawerProps> = ({
   onSubmit,
 }) => {
   const { colors } = useAppTheme();
-  const { isRecording, durationMs, startRecording, stopRecording } = useAudioRecorder();
   const [audioMemo, setAudioMemo] = useState<AudioMemoMetadata | null>(null);
+  const { isRecording, countdownLabel, pulseOpacity, onMicPressIn, onMicPressOut } =
+    useAudioRecorder(setAudioMemo);
   const [isSchedulingCallback, setIsSchedulingCallback] = useState(false);
   const [callbackAt, setCallbackAt] = useState<number | null>(null);
   const [callbackNote, setCallbackNote] = useState('');
   const [showCustomDateTime, setShowCustomDateTime] = useState(false);
-
-  const handleMicPressIn = () => {
-    startRecording();
-  };
-
-  const handleMicPressOut = async () => {
-    const memo = await stopRecording();
-    if (memo) {
-      setAudioMemo(memo);
-    }
-  };
 
   const resetCallbackState = () => {
     Keyboard.dismiss();
@@ -157,8 +148,6 @@ export const PostCallDrawer: React.FC<PostCallDrawerProps> = ({
     submitDisposition('CALLBACK_SCHEDULED', { callbackAt, callbackNote: callbackNote.trim() });
   };
 
-  const seconds = Math.min(15, Math.floor(durationMs / 1000));
-
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={() => {}}>
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)' }}>
@@ -180,19 +169,24 @@ export const PostCallDrawer: React.FC<PostCallDrawerProps> = ({
 
             <View style={{ marginTop: 20, flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.subpanel, paddingHorizontal: 16, paddingVertical: 12 }}>
               <Pressable
-                onPressIn={handleMicPressIn}
-                onPressOut={handleMicPressOut}
+                onPressIn={onMicPressIn}
+                onPressOut={onMicPressOut}
+                hitSlop={8}
                 style={{ height: 48, width: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: isRecording ? '#F43F5E' : colors.subpanel }}
               >
                 {isRecording ? <Square size={18} color="#ffffff" /> : <Mic size={20} color="#ffffff" />}
               </Pressable>
-              <Text style={{ marginLeft: 12, fontSize: 14, color: colors.textSecondary }}>
-                {isRecording
-                  ? `Recording… ${seconds}s / 15s`
-                  : audioMemo
+              {isRecording ? (
+                <Animated.Text style={{ marginLeft: 12, fontSize: 14, fontWeight: '700', color: '#F43F5E', opacity: pulseOpacity }}>
+                  {countdownLabel}
+                </Animated.Text>
+              ) : (
+                <Text style={{ marginLeft: 12, fontSize: 14, color: colors.textSecondary }}>
+                  {audioMemo
                     ? `Voice memo captured (${Math.floor(audioMemo.durationMs / 1000)}s)`
-                    : 'Hold to record a 15s debrief'}
-              </Text>
+                    : 'Tap or hold to record a 15s debrief'}
+                </Text>
+              )}
             </View>
 
             {isSchedulingCallback ? (
